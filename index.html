@@ -55,8 +55,42 @@
         <br><br><br>
         <h1>連絡先</h1>
         <h4>mail  tortoise.programmer1113@gmail.com</h4>
+        <h4>Tell  080-5829-3541</h4>
+
+        <br><br>
+        <div class="contact-form">
+          <h2>お問い合わせフォーム</h2>
+          <form action="https://docs.google.com/forms/u/0/d/e/1FAIpQLSdurYMP6ZADsR1YB_qNZ5rlxV5a6C6m0M8Z-_9kh9DvXbsnTw/formResponse?embedded=true" 
+           method="POST"
+           target="hidden_iframe"
+           onsubmit="submitted=true;">
+
+            <div class="form-group">
+              <label for="name">お名前</label>
+              <input type="text" id="name" name="entry.1948370236" required>
+            </div>
+            <div class="form-group">
+              <label for="email">メールアドレス</label>
+              <input type="email" id="email" name="entry.1829549296" required>
+            </div>
+            <div class="form-group">
+              <label for="message">お問い合わせ内容</label>
+              <textarea id="message" name="entry.1865478116" rows="5" required></textarea>
+            </div>
+            <button type="submit" class="submit-btn">送信する</button>
+          
+          </form>
+        </div>
+        <script type="text/javascript">
+          let submitted = false;
+        </script>
+        <iframe
+            name="hidden_iframe"
+            id="hidden_iframe"
+            style="display: none"
+            onload="if(submitted){window.location='thanks.html';}"
+        ></iframe>
       </budoux-ja>
-      
     </div>
   </main>
 </body>
