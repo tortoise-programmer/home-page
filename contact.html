@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>トータスプログラマ</title>
+<meta name="description" content="ディスクリプションを入力">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="index.css">
+<script src="index.js"></script>
+<link href="https://fonts.googleapis.com/earlyaccess/nicomoji.css" rel="stylesheet">
+</head>
+<body>
+    <div class="sns">
+        <a href="mailto:tortoise.programmer1113@gmail.com"><img src="images/google_icon.png" style="width: 40px;"></a>
+        <a href="https://www.facebook.com/tortoise.programmer"><img src="images/icon_13-1.png" style="width: 40px;"></a>
+        <a href="https://twitter.com/tortoisePG1113"><img src="images/logo-black.png" style="width: 40px;"></a>
+        <div class="contact_header_contents">
+            <h1>お問い合わせフォーム</h1>
+        </div>
+    </div>
+  <main>
+    <div class="main_contents">
+      <budoux-ja>
+        <script type="text/javascript">
+          let submitted = false;
+        </script>
+        <div class="contact-form">
+          <form action="https://docs.google.com/forms/u/0/d/e/1FAIpQLSdurYMP6ZADsR1YB_qNZ5rlxV5a6C6m0M8Z-_9kh9DvXbsnTw/formResponse?embedded=true" 
+           method="POST"
+           target="hidden_iframe"
+           onsubmit="return validateForm();">
+
+            <div class="form-group">
+              <label for="name">お名前</label>
+              <input type="text" id="name" name="entry.1948370236" required>
+            </div>
+            <div class="form-group">
+              <label for="email">メールアドレス</label>
+              <input type="email" id="email" name="entry.1829549296" required>
+            </div>
+            <div class="form-group">
+              <label for="message">お問い合わせ内容</label>
+              <textarea id="message" name="entry.1865478116" rows="30" cols="50" required></textarea>
+              <div id="message-error" style="color: white; display: none;">ひらがな、カタカナ、漢字のいずれかをお問い合わせ内容に含めてください。</div>
+            </div>
+            <button type="submit" class="submit-btn">送信する</button>
+          </form>
+          <script>
+            function validateForm() {
+              const message = document.getElementById('message').value;
+              const hasJapaneseChars = /[ぁ-んァ-ン一-龥]/.test(message);
+              const errorDiv = document.getElementById('message-error');
+              
+              if (!hasJapaneseChars) {
+                errorDiv.style.display = 'block';
+                return false;
+              }
+              
+              errorDiv.style.display = 'none';
+              submitted = true;
+              return true;
+            }
+          </script>
+        </div>
+        <iframe
+            name="hidden_iframe"
+            id="hidden_iframe"
+            style="display: none"
+            onload="if(submitted){window.location='thanks.html';}"
+        ></iframe>
+      </budoux-ja>
+    </div>
+  </main>
+</body>
+</html>

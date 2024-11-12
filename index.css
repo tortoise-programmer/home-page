@@ -16,6 +16,10 @@ header{
   height: 46vw;
   text-align: center;
 }
+.form-group label{
+  text-align: left;
+  padding-bottom: 1%;
+}
 header img{
   width:22vw;
   margin-top: 5%;
@@ -25,6 +29,10 @@ header h1{
 }
 header p{
   font-size: 1.5vw;
+}
+.contact_header_contents{
+  text-align: center;
+  padding-bottom: 1%;
 }
 .header_contents{
   margin-top: 7%;
@@ -97,6 +105,7 @@ main{
   cursor: pointer;
   display: block;
   margin: 0 auto;
+  font-size: 1.2em;
 }
 
 .submit-btn:hover {
