@@ -2,6 +2,12 @@ body{
   margin: 0;
   perspective: 1px;
 }
+.app_name{
+  background-color: #f5f5f5; 
+  padding: 10px; 
+  border-radius: 5px;
+  font-size: 1.8vw;
+}
 .sns{
   padding-top: 2%;
   background-color: #8a8;
