@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="test.css">
+    <title>ページタイトル</title>
+</head>
+<body>
+
+    <div id="delivery-container">
+        <div class="container">
+            <h1>注文フォーム</h1>
+            <div class="delivery">
+                <label for="delivery-date">納品日</label>
+                <input type="date" id="delivery-date">
+            </div>
+            <div class="goods-container">
+                <div class="goods">
+                    <div class="goods-row">
+                        <select name="goods" class="goods-select">
+                            <option value="">選択</option>
+                            <option value="1">木の板</option>
+                            <option value="2">蝶番</option>
+                        </select>
+                    </div>
+                    <div class="goods-row">
+                        <select name="size" class="size-select">
+                            <option value="">選択</option>
+                            <option value="1">5mm</option>
+                            <option value="2">6mm</option>
+                        </select>
+                        <button type="button" class="quantity-btn" onclick="decrementQuantity(this)">-</button>
+                        <input type="number" class="goods-quantity" value="0" min="0">
+                        <button type="button" class="quantity-btn" onclick="incrementQuantity(this)">+</button>
+                        <select name="unit" class="unit-select">
+                            <option value="">選択</option>
+                            <option value="1">g</option>
+                            <option value="2">本</option>
+                        </select>
+                    </div>
+                    
+                </div>
+            </div>
+            <button type="button" class="add_button_goods" onclick="addGoodsRow(this)">商品を追加</button>
+        </div>
+        <button type="button" class="add_button_date" onclick="addDateRow()">納品日を追加</button>
+    </div>
+
+    <style>
+
+        .goods-row {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.5rem;
+        }
+        .container {
+            width: 100%;
+            max-width: 28rem; /* max-w-md */
+            margin-left: auto;
+            margin-right: auto;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #333;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .delivery {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem; /* space-x-2 */
+            margin-top: 1rem; /* mt-4 */
+        }
+
+        .delivery label {
+            font-size: 1.125rem; /* text-lg */
+            font-weight: bold;
+        }
+
+        .delivery input[type="date"] {
+            border: 1px solid #000;
+            padding: 0.5rem 1rem; /* px-4 py-2 */
+            border-radius: 0.25rem;
+            width: 14rem; /* w-56 */
+            height: 2.5rem; /* h-10 */
+        }
+
+        .goods-container {
+            margin-top: 1.5rem;
+            padding-left: 0; /* 2.5remから0に変更 */
+            display: flex;
+            justify-content: center; /* 追加 */
+            width: 100%; /* 追加 */
+        }
+
+        .goods {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin: 0 auto; /* 0 0.5remから0 autoに変更 */
+            max-width: 100%; /* 追加 */
+            padding: 0 0.5rem; /* 追加 */
+        }
+
+        .goods select {
+            border: 1px solid #000;
+            background-color: #d1d5db; /* bg-gray-300 */
+            font-size: 1.125rem;
+            font-weight: bold;
+            height: 3rem; /* h-12 */
+        }
+
+        .goods-quantity {
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
+            background-color: white;
+            font-size: 1.875rem; /* text-3xl */
+            font-weight: bold;
+            width: 4rem; /* w-16 */
+            height: 3rem; /* h-12 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .quantity-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #000;
+            background-color: white;
+            font-weight: bold;
+            font-size: 1.875rem;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 3rem; /* w-12 */
+            height: 3rem; /* h-12 */
+            transition: background-color 0.3s;
+        }
+
+        .quantity-btn:active {
+            background-color: #60a5fa; /* bg-blue-400 */
+        }
+
+        /* 既存のスタイルは残しつつ、必要なものを上書き */
+        .goods-select,
+        .size-select,
+        .unit-select {
+            background-color: #d1d5db;
+            height: 3rem;
+            font-weight: bold;
+            font-size: 1.125rem;
+        }
+
+        .add_button_goods {
+            display: block;
+            width: 120px;
+            margin: 1% auto;
+            padding: 0.75rem 1.5rem;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .add_button_date{
+            display: block;
+            width: 150px;
+            margin: 1% auto;
+            padding: 0.75rem 1.5rem;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .add_button_goods:hover {
+            background-color: #0056b3;
+        }
+    </style>
+
+    <script>
+        function incrementQuantity(btn) {
+            const input = btn.previousElementSibling;
+            input.value = parseInt(input.value) + 1;
+            if(input.value < 0){
+                input.value = 0;
+            }
+        }
+
+        function decrementQuantity(btn) {
+            const input = btn.nextElementSibling;
+            const currentValue = parseInt(input.value);
+            if (currentValue > 0) {
+                input.value = currentValue - 1;
+            }else{
+                input.value = 0;
+            }
+        }
+
+        function addGoodsRow(button) {
+            const goodsContainer = button.parentElement.querySelector('.goods-container');
+            const goodsDiv = goodsContainer.querySelector('.goods');
+            const newRow = document.createElement('div');
+            newRow.className = 'goods';
+            newRow.innerHTML = `
+                <div class="goods-row">
+                    <select name="goods" class="goods-select">
+                        <option value="">選択</option>
+                        <option value="1">木の板</option>
+                        <option value="2">蝶番</option>
+                    </select>
+                </div>
+                <div class="goods-row">
+                    <select name="size" class="size-select">
+                        <option value="">選択</option>
+                        <option value="1">5mm</option>
+                        <option value="2">6mm</option>
+                    </select>
+                    <button type="button" class="quantity-btn" onclick="decrementQuantity(this)">-</button>
+                    <input type="number" class="goods-quantity" value="0" min="0">
+                    <button type="button" class="quantity-btn" onclick="incrementQuantity(this)">+</button>
+                    <select name="unit" class="unit-select">
+                        <option value="">選択</option>
+                        <option value="1">g</option>
+                        <option value="2">本</option>
+                    </select>
+                </div>
+            `;
+            goodsDiv.appendChild(newRow);
+        }
+
+        function addDateRow() {
+            const container = document.getElementById('delivery-container');
+            const newContainer = document.createElement('div');
+            newContainer.className = 'container';
+            newContainer.innerHTML = `
+                <div class="delivery">
+                    <label for="delivery-date">納品日</label>
+                    <input type="date" id="delivery-date">
+                </div>
+                <div class="goods-container">
+                    <div class="goods">
+                        <div class="goods-row">
+                            <select name="goods" class="goods-select">
+                                <option value="">選択</option>
+                                <option value="1">木の板</option>
+                                <option value="2">蝶番</option>
+                            </select>
+                        </div>
+                        <div class="goods-row">
+                            <select name="size" class="size-select">
+                                <option value="">選択</option>
+                                <option value="1">5mm</option>
+                                <option value="2">6mm</option>
+                            </select>
+                            <button type="button" class="quantity-btn" onclick="decrementQuantity(this)">-</button>
+                            <input type="number" class="goods-quantity" value="0" min="0">
+                            <button type="button" class="quantity-btn" onclick="incrementQuantity(this)">+</button>
+                            <select name="unit" class="unit-select">
+                                <option value="">選択</option>
+                                <option value="1">g</option>
+                                <option value="2">本</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="add_button_goods" onclick="addGoodsRow(this)">商品を追加</button>
+            `;
+            container.insertBefore(newContainer, document.querySelector('.add_button_date'));
+        }
+    </script>
+
+</body>
+</html>
