@@ -1,50 +1,72 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<title>トータスプログラマ</title>
-<meta name="description" content="ディスクリプションを入力">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="index.css">
-<script src="index.js"></script>
-<link href="https://fonts.googleapis.com/earlyaccess/nicomoji.css" rel="stylesheet">
+  <meta charset="utf-8">
+  <title>tortoise programmer | お問い合わせ</title>
+  <meta name="description" content="tortoise programmerへのお問い合わせフォーム">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="index.css">
+  <script src="index.js" defer></script>
+  <link href="https://fonts.googleapis.com/earlyaccess/nicomoji.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="sns">
-        <a href="mailto:tortoise.programmer1113@gmail.com"><img src="images/google_icon.png" style="width: 40px;"></a>
-        <a href="https://www.facebook.com/tortoise.programmer"><img src="images/icon_13-1.png" style="width: 40px;"></a>
-        <a href="https://twitter.com/tortoisePG1113"><img src="images/logo-black.png" style="width: 40px;"></a>
-        <div class="contact_header_contents">
-            <h1>お問い合わせフォーム</h1>
-        </div>
+  <header>
+    <div class="header-container">
+      <div class="logo">
+        <img src="images/logo.png" alt="tortoise programmerロゴ">
+        <h1>tortoise programmer</h1>
+      </div>
+      <nav>
+        <ul>
+          <li><a href="index.html#about">自己紹介</a></li>
+          <li><a href="index.html#skills">スキル</a></li>
+          <li><a href="contact.html">お問い合わせ</a></li>
+        </ul>
+      </nav>
+      <div class="hamburger">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
     </div>
+  </header>
+
   <main>
-    <div class="main_contents">
-      <budoux-ja>
-        <script type="text/javascript">
-          let submitted = false;
-        </script>
+    <section class="contact-section">
+      <div class="container">
+        <h2 class="contact-title">お問い合わせ</h2>
+        
         <div class="contact-form">
+          <script type="text/javascript">
+            let submitted = false;
+          </script>
+          
           <form action="https://docs.google.com/forms/u/0/d/e/1FAIpQLSdurYMP6ZADsR1YB_qNZ5rlxV5a6C6m0M8Z-_9kh9DvXbsnTw/formResponse?embedded=true" 
-           method="POST"
-           target="hidden_iframe"
-           onsubmit="return validateForm();">
+            method="POST"
+            target="hidden_iframe"
+            onsubmit="return validateForm();">
 
             <div class="form-group">
               <label for="name">お名前</label>
               <input type="text" id="name" name="entry.1948370236" required>
             </div>
+            
             <div class="form-group">
               <label for="email">メールアドレス</label>
               <input type="email" id="email" name="entry.1829549296" required>
             </div>
+            
             <div class="form-group">
               <label for="message">お問い合わせ内容</label>
-              <textarea id="message" name="entry.1865478116" rows="30" cols="50" required></textarea>
-              <div id="message-error" style="color: white; display: none;">ひらがな、カタカナ、漢字のいずれかをお問い合わせ内容に含めてください。</div>
+              <textarea id="message" name="entry.1865478116" rows="10" required></textarea>
+              <div id="message-error" style="color: var(--accent-color); margin-top: 5px; display: none;">ひらがな、カタカナ、漢字のいずれかをお問い合わせ内容に含めてください。</div>
             </div>
+            
             <button type="submit" class="submit-btn">送信する</button>
           </form>
+          
           <script>
             function validateForm() {
               const message = document.getElementById('message').value;
@@ -62,14 +84,26 @@
             }
           </script>
         </div>
+        
         <iframe
-            name="hidden_iframe"
-            id="hidden_iframe"
-            style="display: none"
-            onload="if(submitted){window.location='thanks.html';}"
+          name="hidden_iframe"
+          id="hidden_iframe"
+          style="display: none"
+          onload="if(submitted){window.location='thanks.html';}"
         ></iframe>
-      </budoux-ja>
-    </div>
+      </div>
+    </section>
   </main>
+
+  <footer>
+    <div class="container">
+      <div class="sns-links">
+        <a href="mailto:tortoise.programmer1113@gmail.com"><img src="images/google_icon.png" alt="email"></a>
+        <a href="https://www.facebook.com/tortoise.programmer"><img src="images/icon_13-1.png" alt="facebook"></a>
+        <a href="https://twitter.com/tortoisePG1113"><img src="images/logo-black.png" alt="twitter"></a>
+      </div>
+      <p>&copy; 2023 tortoise programmer. All Rights Reserved.</p>
+    </div>
+  </footer>
 </body>
 </html>
