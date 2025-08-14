@@ -689,6 +689,193 @@ footer p {
   color: #bdc3c7;
 }
 
+/* 3Dプリンターページ専用スタイル */
+.service-overview {
+  background-color: white;
+  border-radius: 10px;
+  padding: 30px;
+  margin-bottom: 40px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+
+.overview-content p {
+  font-size: 1.2rem;
+  color: var(--text-color);
+  line-height: 1.8;
+}
+
+.printing-services {
+  margin-bottom: 60px;
+}
+
+.specs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  margin-top: 40px;
+}
+
+.spec-card {
+  background-color: white;
+  border-radius: 10px;
+  padding: 30px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease;
+}
+
+.spec-card:hover {
+  transform: translateY(-5px);
+}
+
+.spec-card h3 {
+  color: var(--primary-color);
+  margin-bottom: 20px;
+  font-size: 1.3rem;
+  text-align: center;
+}
+
+.spec-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.spec-card li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--light-gray);
+  position: relative;
+  padding-left: 20px;
+}
+
+.spec-card li:before {
+  content: '•';
+  color: var(--secondary-color);
+  position: absolute;
+  left: 0;
+  font-weight: bold;
+}
+
+.spec-card li:last-child {
+  border-bottom: none;
+}
+
+.materials-specs,
+.pricing-section,
+.workflow-section {
+  margin-bottom: 60px;
+}
+
+.pricing-content {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+.pricing-card {
+  background-color: white;
+  border-radius: 10px;
+  padding: 40px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  max-width: 500px;
+  width: 100%;
+}
+
+.pricing-card h3 {
+  color: var(--primary-color);
+  margin-bottom: 25px;
+  text-align: center;
+  font-size: 1.5rem;
+}
+
+.pricing-info {
+  margin-bottom: 20px;
+}
+
+.pricing-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--light-gray);
+}
+
+.pricing-item:last-child {
+  border-bottom: none;
+}
+
+.pricing-label {
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.pricing-value {
+  font-weight: 600;
+  color: var(--secondary-color);
+  font-size: 1.1rem;
+}
+
+.pricing-note {
+  font-size: 0.9rem;
+  color: var(--dark-gray);
+  text-align: center;
+  font-style: italic;
+  margin-top: 15px;
+}
+
+.workflow-container {
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.workflow-step {
+  display: flex;
+  align-items: flex-start;
+  background-color: white;
+  border-radius: 10px;
+  padding: 30px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease;
+}
+
+.workflow-step:hover {
+  transform: translateX(10px);
+}
+
+.step-number {
+  background-color: var(--secondary-color);
+  color: white;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+  margin-right: 25px;
+  flex-shrink: 0;
+}
+
+.step-content h3 {
+  color: var(--primary-color);
+  margin-bottom: 10px;
+  font-size: 1.3rem;
+}
+
+.step-content p {
+  color: var(--text-color);
+  line-height: 1.6;
+}
+
+.contact-cta {
+  background-color: var(--section-accent-bg);
+  border-radius: 10px;
+  padding: 40px;
+  text-align: center;
+}
+
 /* レスポンシブデザイン */
 @media (max-width: 900px) {
   .header-container {
@@ -817,5 +1004,37 @@ footer p {
   .work-content h3,
   .service-card h3 {
     font-size: 1.3rem;
+  }
+  
+  /* 3Dプリンターページのレスポンシブ */
+  .specs-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .workflow-step {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .step-number {
+    margin-right: 0;
+    margin-bottom: 15px;
+  }
+  
+  .workflow-step:hover {
+    transform: translateY(-5px);
+  }
+  
+  .pricing-card {
+    padding: 25px 20px;
+  }
+  
+  .service-overview {
+    padding: 20px;
+  }
+  
+  .contact-cta {
+    padding: 30px 20px;
   }
 }
