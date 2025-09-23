@@ -33,7 +33,6 @@
       </div>
     </div>
   </header>
-
   <main>
     <section id="google" class="section">
       <div class="container">
@@ -146,37 +145,6 @@
           <li><strong>デフォルトのルーティングでスプリット配信</strong><br>「ルートを変更」を有効にし、<strong>認識されていないアドレスに対してのみこの操作を実施</strong> を選択。未作成ユーザー宛メールは既存サーバーへ、作成済ユーザー宛は Gmail で受信。</li>
           <li><strong>（任意）二重配信（デュアルデリバリ）</strong><br>テスト期間中はパイロットユーザー宛メールを <strong>Gmail と既存サーバーの両方</strong>に配信する運用も可能です（ルーティングの追加条件等で実現）。</li>
         </ol>
-
-        <div class="services-container" style="margin-top: 20px;">
-          <div class="service-card">
-            <div class="service-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-            <h3>前提・注意</h3>
-            <p>スプリット配信は <strong>MX を Google に切替</strong>えたうえで、未登録宛先を既存サーバーへ転送する設計です。切替は業務影響があるため、実施時間帯や巻き戻し手順を事前に決めてください。</p>
-          </div>
-          <div class="service-card">
-            <div class="service-icon"><i class="fa-solid fa-user-shield"></i></div>
-            <h3>安全な進め方</h3>
-            <p>まずは試験導入メンバーのみユーザー作成→受信・送信テスト→周辺（スマホ/Outlook）設定→ヘルプ周知の順で段階導入がおすすめです。</p>
-          </div>
-          <div class="service-card">
-            <div class="service-icon"><i class="fa-solid fa-paper-plane"></i></div>
-            <h3>送信ドメイン対策</h3>
-            <p>SPF/DKIM/DMARC の整備を推奨。特に SPF は Gmail・既存サーバー双方の送信元を許可するよう見直してください。</p>
-          </div>
-          <div class="service-card">
-            <div class="service-icon"><i class="fa-solid fa-list-check"></i></div>
-            <h3>チェックリスト</h3>
-            <p>・対象ユーザー一覧作成／権限確認<br>・MX 切替の実施計画と監視体制<br>・既存サーバーの受信ログ確認方法<br>・ヘルプデスク連絡窓口の周知</p>
-          </div>
-        </div>
-
-        <h3 id="faq" style="margin-top: 40px;">よくある質問</h3>
-        <ul>
-          <li><strong>全員を Google に移行する必要がありますか？</strong><br>いいえ。スプリット配信により、作成済ユーザーのみ Gmail、それ以外は従来サーバーで継続できます。</li>
-          <li><strong>一部ユーザーのメールが届かない場合は？</strong><br>宛先ユーザーが Google に作成済か、ルーティング条件（未認識アドレスのみ）が正しいか、既存サーバーの受信ログを確認してください。</li>
-          <li><strong>元に戻せますか？</strong><br>MX を旧設定へ戻せば従来の受信経路に復帰します。変更の反映には数分〜数時間の DNS 伝播が必要です。</li>
-          <li><strong>Outlook やスマホの設定は？</strong><br>Gmail 導入ユーザーは <a href="https://support.google.com/a/users/answer/9310148?hl=ja" target="_blank" rel="noopener noreferrer">公式ヘルプ</a> を参照し、Gmail アプリや IMAP 設定を行ってください。</li>
-        </ul>
       </div>
     </section>
   </main>
