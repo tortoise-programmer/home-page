@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>Google関連 | tortoise programmer</title>
+  <meta name="description" content="Google関連のメモやリンク、作業ログのまとめページ">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="index.css">
+  <script src="index.js" defer></script>
+  <link href="https://fonts.googleapis.com/earlyaccess/nicomoji.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+</head>
+<body>
+  <header>
+    <div class="header-container">
+      <div class="logo">
+        <h1>tortoise programmer</h1>
+      </div>
+      <nav>
+        <ul>
+          <li><a href="index.html#about">自己紹介</a></li>
+          <li><a href="index.html#services">サービス</a></li>
+          <li><a href="index.html#skills">スキル</a></li>
+          <li><a href="index.html#works">実績</a></li>
+          <li><a href="contact.html">お問い合わせ</a></li>
+        </ul>
+      </nav>
+      <div class="hamburger">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="google" class="section">
+      <div class="container">
+        <h2 class="section-title">Google Workspace ご紹介ページ</h2>
+
+        <p>このリンクから申し込みをしてください。</p><br>
+
+        <a href="https://referworkspace.app.goo.gl/8Q9z"><img src="https://storage.googleapis.com/referworkspace-asset/img/digitalbuttons/digital_button_ja.png" /></a>
+        
+        <div class="service-overview" style="margin-top: 20px;">
+          <h3>目次</h3>
+          <ul style="list-style: none; padding-left: 0; line-height: 1.9;">
+            <li><i class="fa-solid fa-list-check" style="color:#3498db; margin-right:6px;"></i><a href="#signup">Google Workspace の申し込み手順</a></li>
+            <li><i class="fa-solid fa-envelope-circle-check" style="color:#3498db; margin-right:6px;"></i><a href="#keep-server">既存メールサーバーを維持して Gmail を併用</a></li>
+            <li><i class="fa-solid fa-user-group" style="color:#3498db; margin-right:6px;"></i><a href="#partial-adoption">社内の一部のみで段階導入（スプリット配信）</a></li>
+            <li><i class="fa-solid fa-circle-question" style="color:#3498db; margin-right:6px;"></i><a href="#faq">よくある質問</a></li>
+          </ul>
+        </div>
+                                              
+        <h3 id="signup" style="margin-top: 30px;">Google Workspace の申し込み手順</h3>
+        <ol>
+          <li>
+            <a href="https://support.google.com/a/answer/53926?hl=ja-JP" target="_blank" rel="noopener noreferrer">Google Workspace の無料試用へのお申し込み</a> ページにアクセスします。
+          </li>
+          <li>
+            ビジネス情報を入力します。
+            <ul>
+              <li>会社名（組織名）</li>
+              <li>従業員数</li>
+              <li>国/地域（日本）</li>
+            </ul>
+          </li>
+          <li>
+            管理者情報を入力します。
+            <ul>
+              <li>氏名</li>
+              <li>現在のメールアドレス（連絡先）</li>
+            </ul>
+          </li>
+          <li>
+            ドメインを選択します。
+            <ul>
+              <li>既存ドメインを使う場合: ドメイン名を入力</li>
+              <li>新規ドメインを購入する場合: 希望ドメイン名で購入手続き</li>
+            </ul>
+          </li>
+          <li>
+            管理者のユーザー名とパスワードを設定します。
+          </li>
+          <li>
+            利用規約を確認し、同意します。
+          </li>
+          <li>
+            （既存ドメインの場合）ドメイン所有権の確認を行います。
+          </li>
+          <li>
+            必要に応じてユーザーを追加します。
+          </li>
+          <li>
+            支払い情報を入力します（無料試用後の継続利用に備えて設定）。
+          </li>
+        </ol>
+                                              
+        <h3 id="keep-server" style="margin-top: 30px;">既存メールサーバーを維持したまま Gmail を利用する設定</h3>
+        <p>同一ドメインで Google Workspace をまだ使っていない既存メールアドレスを、メールサーバーを変更せずに利用するための設定です。</p>
+
+        <ol>
+          <li>
+            <a href="https://admin.google.com/ac/appslist/core" target="_blank" rel="noopener noreferrer">Google 管理コンソール</a> に管理者でアクセスし、一覧から <strong>Gmail</strong> をクリックします。
+          </li>
+          <img src="images/googleworkspace/gmail欄をクリック.jpg" alt="ホストタブを開く" loading="lazy">
+          <img src="images/googleworkspace/ホスト.jpg" alt="ホストタブを開く" loading="lazy">
+          <img src="images/googleworkspace/ホストのルートを追加ボタン.jpg" alt="ホストタブを開く" loading="lazy">
+          <li>
+            <strong>ホスト</strong> タブを開き、既存で使っているメールサーバーのホストを登録します。
+            <ul>
+              <li>ホスト名: 例）<code>mail.example.com</code></li>
+              <li>ポート番号: 通常は <code>25</code></li>
+              <li>オプション: <strong>「ホストで MX ルックアップを実行する」</strong> のチェックが外れていることを確認</li>
+            </ul>
+          </li>
+          <img src="images/googleworkspace/ホスト設定画面.jpg" alt="ホストタブを開く" loading="lazy">
+
+          <img src="images/googleworkspace/デフォルトルーティング.jpg" alt="ホストタブを開く" loading="lazy">
+          <img src="images/googleworkspace/デフォルトルーティング追加ボタン.jpg" alt="ホストタブを開く" loading="lazy">
+          <li>
+            <strong>デフォルトのルーティング</strong> タブを開き、<strong>ルーティングを追加</strong> をクリックします。
+            <ul>
+              <li>照合するエンベロープ受信者: <strong>すべての受信者</strong></li>
+              <li>ルート: <strong>ルートを変更</strong> にチェックし、先ほど作成したホストを選択</li>
+              <li>オプション: <strong>認識されていないアドレスに対してのみこの操作を実施する</strong> が選択されている</li>
+            </ul>
+          </li>
+          <img src="images/googleworkspace/デフォルトルーティング設定画面.jpg" alt="ホストタブを開く" loading="lazy">
+
+          <li>
+            設定を <strong>保存</strong> します（反映には時間がかかる場合があります）。
+          </li>
+        </ol>
+
+        <p style="margin-top: 10px; font-size: 0.95rem; color: #555;">※ 設定を誤るとメール受信に影響する可能性があります。詳細は <a href="https://support.google.com/a/answer/6142901?hl=ja" target="_blank" rel="noopener noreferrer">Google Workspace 管理者ヘルプ</a> を参照してください。</p>
+
+        <h3 id="partial-adoption" style="margin-top: 40px;">社内の一部のみで段階導入（スプリット配信）</h3>
+        <p>既に自社のメールサーバーを利用中で、まずは一部ユーザー（試験導入メンバー）のみ Gmail を使いたい場合の代表的な方法です。<br>
+        ドメインの MX を Google に向け、<strong>「認識されていないアドレスは既存サーバーへ転送」</strong>するルールを設定することで、<strong>Google アカウントを作成したメンバーだけ</strong>が Gmail で受信し、それ以外は従来サーバーで受信を継続できます（= スプリット配信）。</p>
+
+        <ol>
+          <li><strong>対象ユーザーだけ Google アカウントを作成</strong><br>試験導入メンバーのみユーザーを作成（推奨: 導入用の組織部門を用意）。</li>
+          <li><strong>既存サーバーのホストを登録</strong><br>本ページの「既存メールサーバーを維持…」の手順で <strong>ホスト</strong> を作成。</li>
+          <li><strong>デフォルトのルーティングでスプリット配信</strong><br>「ルートを変更」を有効にし、<strong>認識されていないアドレスに対してのみこの操作を実施</strong> を選択。未作成ユーザー宛メールは既存サーバーへ、作成済ユーザー宛は Gmail で受信。</li>
+          <li><strong>（任意）二重配信（デュアルデリバリ）</strong><br>テスト期間中はパイロットユーザー宛メールを <strong>Gmail と既存サーバーの両方</strong>に配信する運用も可能です（ルーティングの追加条件等で実現）。</li>
+        </ol>
+
+        <div class="services-container" style="margin-top: 20px;">
+          <div class="service-card">
+            <div class="service-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <h3>前提・注意</h3>
+            <p>スプリット配信は <strong>MX を Google に切替</strong>えたうえで、未登録宛先を既存サーバーへ転送する設計です。切替は業務影響があるため、実施時間帯や巻き戻し手順を事前に決めてください。</p>
+          </div>
+          <div class="service-card">
+            <div class="service-icon"><i class="fa-solid fa-user-shield"></i></div>
+            <h3>安全な進め方</h3>
+            <p>まずは試験導入メンバーのみユーザー作成→受信・送信テスト→周辺（スマホ/Outlook）設定→ヘルプ周知の順で段階導入がおすすめです。</p>
+          </div>
+          <div class="service-card">
+            <div class="service-icon"><i class="fa-solid fa-paper-plane"></i></div>
+            <h3>送信ドメイン対策</h3>
+            <p>SPF/DKIM/DMARC の整備を推奨。特に SPF は Gmail・既存サーバー双方の送信元を許可するよう見直してください。</p>
+          </div>
+          <div class="service-card">
+            <div class="service-icon"><i class="fa-solid fa-list-check"></i></div>
+            <h3>チェックリスト</h3>
+            <p>・対象ユーザー一覧作成／権限確認<br>・MX 切替の実施計画と監視体制<br>・既存サーバーの受信ログ確認方法<br>・ヘルプデスク連絡窓口の周知</p>
+          </div>
+        </div>
+
+        <h3 id="faq" style="margin-top: 40px;">よくある質問</h3>
+        <ul>
+          <li><strong>全員を Google に移行する必要がありますか？</strong><br>いいえ。スプリット配信により、作成済ユーザーのみ Gmail、それ以外は従来サーバーで継続できます。</li>
+          <li><strong>一部ユーザーのメールが届かない場合は？</strong><br>宛先ユーザーが Google に作成済か、ルーティング条件（未認識アドレスのみ）が正しいか、既存サーバーの受信ログを確認してください。</li>
+          <li><strong>元に戻せますか？</strong><br>MX を旧設定へ戻せば従来の受信経路に復帰します。変更の反映には数分〜数時間の DNS 伝播が必要です。</li>
+          <li><strong>Outlook やスマホの設定は？</strong><br>Gmail 導入ユーザーは <a href="https://support.google.com/a/users/answer/9310148?hl=ja" target="_blank" rel="noopener noreferrer">公式ヘルプ</a> を参照し、Gmail アプリや IMAP 設定を行ってください。</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="sns-links">
+        <a href="mailto:tortoise.programmer1113@gmail.com"><img src="images/google_icon.png" alt="email"></a>
+        <a href="https://www.facebook.com/tortoise.programmer"><img src="images/icon_13-1.png" alt="facebook"></a>
+        <a href="https://twitter.com/tortoisePG1113"><img src="images/logo-black.png" alt="twitter"></a>
+      </div>
+      <p>&copy; 2023 tortoise programmer. All Rights Reserved.</p>
+    </div>
+  </footer>
+
+</body>
+</html>
