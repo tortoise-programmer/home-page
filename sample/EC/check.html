@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EC本番反映前チェックシート</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>EC本番反映前チェックシート</h1>
+            <p class="subtitle">各画面の動作確認を行ってください</p>
+        </header>
+
+        <!-- ========== 基本情報入力 ========== -->
+        <div class="user-info">
+            <h2>基本情報</h2>
+            <div class="info-inputs">
+                <div class="input-group">
+                    <label for="task-name">タスク名:</label>
+                    <input type="text" id="task-name" placeholder="例: 本番反映前確認、リリース前チェック等">
+                </div>
+                <div class="input-group">
+                    <label for="checker-name">確認者名:</label>
+                    <input type="text" id="checker-name" placeholder="確認者の名前を入力してください">
+                </div>
+                <div class="input-group">
+                    <label for="check-date">確認日:</label>
+                    <input type="date" id="check-date">
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== メインフロー ========== -->
+        <div class="main-flow">
+            <h2>メインフロー確認</h2>
+            
+            <!-- 1. TOPページ -->
+            <div class="flow-item check-required">
+                <div class="flow-header">
+                    <input type="checkbox" id="top-page" class="main-checkbox" onchange="toggleDetails('top-page'); checkSequentialDependencies('top-page')">
+                    <label for="top-page" class="flow-title">1. TOPページ</label>
+                    <div class="arrow">→</div>
+                    <span class="status" id="top-page-status">未確認</span>
+                </div>
+                <div class="details" id="top-page-details">
+                    <div class="dependency-note">
+                        <h5>編集時の再確認項目:</h5>
+                        <p>TOPページを編集した場合は、商品一覧への導線、会員機能の確認が必要</p>
+                    </div>
+                    <div class="check-item">
+                        <input type="checkbox" id="top-page-ui" onchange="updateStatus('top-page')">
+                        <label for="top-page-ui">表示崩れが無いか</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. 商品一覧 -->
+            <div class="flow-item check-required" id="product-list-item">
+                <div class="flow-header">
+                    <input type="checkbox" id="product-list" class="main-checkbox" onchange="toggleDetails('product-list'); checkSequentialDependencies('product-list')">
+                    <label for="product-list" class="flow-title">2. 商品一覧</label>
+                    <div class="arrow">→</div>
+                    <span class="required-mark" id="product-list-required" style="display:none;">【必須】</span>
+                    <span class="status" id="product-list-status">未確認</span>
+                </div>
+                <div class="details" id="product-list-details">
+                    <div class="dependency-note">
+                        <h5>編集時の再確認項目:</h5>
+                        <p>商品一覧を編集した場合は、商品詳細への導線確認が必要</p>
+                    </div>
+                    <div class="check-item">
+                        <input type="checkbox" id="product-list-ui" onchange="updateStatus('product-list')">
+                        <label for="product-list-ui">表示崩れが無いか</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. 商品詳細画面 -->
+            <div class="flow-item check-required" id="product-detail-item">
+                <div class="flow-header">
+                    <input type="checkbox" id="product-detail" class="main-checkbox" onchange="toggleDetails('product-detail'); checkSequentialDependencies('product-detail')">
+                    <label for="product-detail" class="flow-title">3. 商品詳細画面</label>
+                    <div class="arrow">→</div>
+                    <span class="required-mark" id="product-detail-required" style="display:none;">【必須】</span>
+                    <span class="status" id="product-detail-status">未確認</span>
+                </div>
+                <div class="details" id="product-detail-details">
+                    <div class="dependency-note">
+                        <h5>編集時の再確認項目:</h5>
+                        <p>商品詳細画面を編集した場合は、カート追加機能、価格表示、オプション選択機能確認が必要</p>
+                    </div>
+                    <div class="check-item">
+                        <input type="checkbox" id="product-detail-ui" onchange="updateStatus('product-detail')">
+                        <label for="product-detail-ui">表示崩れが無いか</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. カートの商品画面 -->
+            <div class="flow-item check-required" id="cart-item">
+                <div class="flow-header">
+                    <input type="checkbox" id="cart" class="main-checkbox" onchange="toggleDetails('cart'); checkSequentialDependencies('cart')">
+                    <label for="cart" class="flow-title">4. カートの商品画面</label>
+                    <div class="arrow">→</div>
+                    <span class="required-mark" id="cart-required" style="display:none;">【必須】</span>
+                    <span class="status" id="cart-status">未確認</span>
+                </div>
+                <div class="details" id="cart-details">
+                    <div class="dependency-note">
+                        <h5>編集時の再確認項目:</h5>
+                        <p>カート画面を編集した場合は、金額計算、お客様画面への導線確認が必要</p>
+                    </div>
+                    <div class="check-item">
+                        <input type="checkbox" id="cart-ui" onchange="updateStatus('cart')">
+                        <label for="cart-ui">表示崩れが無いか</label>
+                    </div>
+                    <div class="check-item">
+                        <input type="checkbox" id="cart-amazon-pay" onchange="updateStatus('cart')">
+                        <label for="cart-amazon-pay">Amazon Payの遷移を確認</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. お客様画面 -->
+            <div class="flow-item check-required" id="customer-info-item">
+                <div class="flow-header">
+                    <input type="checkbox" id="customer-info" class="main-checkbox" onchange="toggleDetails('customer-info'); checkSequentialDependencies('customer-info')">
+                    <label for="customer-info" class="flow-title">5. お客様画面</label>
+                    <div class="arrow">→</div>
+                    <span class="required-mark" id="customer-info-required" style="display:none;">【必須】</span>
+                    <span class="status" id="customer-info-status">未確認</span>
+                </div>
+                <div class="details" id="customer-info-details">
+                    <div class="dependency-note">
+                        <h5>編集時の再確認項目:</h5>
+                        <p>お客様画面を編集した場合は、確認画面での情報表示、工事関連項目の確認が必要</p>
+                    </div>
+                    <div class="check-item">
+                        <input type="checkbox" id="customer-info-ui" onchange="updateStatus('customer-info')">
+                        <label for="customer-info-ui">表示崩れが無いか</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. ご注文内容確認画面 -->
+            <div class="flow-item check-required" id="order-confirm-item">
+                <div class="flow-header">
+                    <input type="checkbox" id="order-confirm" class="main-checkbox" onchange="toggleDetails('order-confirm'); checkSequentialDependencies('order-confirm')">
+                    <label for="order-confirm" class="flow-title">6. ご注文内容確認画面</label>
+                    <div class="arrow">→</div>
+                    <span class="required-mark" id="order-confirm-required" style="display:none;">【必須】</span>
+                    <span class="status" id="order-confirm-status">未確認</span>
+                </div>
+                <div class="details" id="order-confirm-details">
+                    <div class="dependency-note">
+                        <h5>編集時の再確認項目:</h5>
+                        <p>確認画面を編集した場合は、決済画面への情報引き継ぎ確認が必要</p>
+                        <p><strong>重要:</strong> Amazon Payからの遷移を必ず確認すること</p>
+                    </div>
+                    <div class="check-item">
+                        <input type="checkbox" id="order-confirm-ui" onchange="updateStatus('order-confirm')">
+                        <label for="order-confirm-ui">表示崩れが無いか</label>
+                    </div>
+                    <div class="check-item">
+                        <input type="checkbox" id="order-confirm-payment-link" onchange="updateStatus('order-confirm')">
+                        <label for="order-confirm-payment-link">決済リンクへ遷移することを確認</label>
+                    </div>
+                    <div class="check-item">
+                        <input type="checkbox" id="order-confirm-guest-member-both" onchange="updateStatus('order-confirm')">
+                        <label for="order-confirm-guest-member-both">「会員登録をせずに」と「会員登録済みのお客様は...」の両方を表示テスト</label>
+                    </div>
+                    <div class="check-item">
+                        <input type="checkbox" id="order-confirm-coupon-display" onchange="updateStatus('order-confirm')">
+                        <label for="order-confirm-coupon-display">クーポン項目が表示されているか確認</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. 決済 -->
+            <div class="flow-item check-required" id="payment-item">
+                <div class="flow-header">
+                    <input type="checkbox" id="payment" class="main-checkbox" onchange="toggleDetails('payment'); checkSequentialDependencies('payment')">
+                    <label for="payment" class="flow-title">7. 決済</label>
+                    <div class="arrow">→</div>
+                    <span class="required-mark" id="payment-required" style="display:none;">【必須】</span>
+                    <span class="status" id="payment-status">未確認</span>
+                </div>
+                <div class="details" id="payment-details">
+                    <div class="dependency-note">
+                        <h5>編集時の再確認項目:</h5>
+                        <p>決済画面を編集した場合は、メール送信内容確認が必要</p>
+                    </div>
+                    <div class="check-item">
+                        <input type="checkbox" id="payment-ui" onchange="updateStatus('payment')">
+                        <label for="payment-ui">表示崩れが無いか</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. メール送信 -->
+            <div class="flow-item check-required" id="email-item">
+                <div class="flow-header">
+                    <input type="checkbox" id="email" class="main-checkbox" onchange="toggleDetails('email'); checkSequentialDependencies('email')">
+                    <label for="email" class="flow-title">8. メール送信</label>
+                    <span class="required-mark" id="email-required" style="display:none;">【必須】</span>
+                    <span class="status" id="email-status">未確認</span>
+                </div>
+                <div class="details" id="email-details">
+                    <div class="dependency-note">
+                        <h5>編集時の再確認項目:</h5>
+                        <p>メール送信機能を編集した場合は、決済完了後のメール送信タイミング確認が必要</p>
+                    </div>
+                    <div class="check-item">
+                        <input type="checkbox" id="email-ui" onchange="updateStatus('email')">
+                        <label for="email-ui">表示崩れが無いか</label>
+                    </div>
+                </div>
+            </div>
+        </div>   
+
+        <!-- ========== 進捗サマリー ========== -->
+        <div class="progress-summary">
+            <h2>進捗サマリー</h2>
+            <div class="progress-stats">
+                <div class="stat-item">
+                    <span class="stat-label">完了画面:</span>
+                    <span class="stat-value" id="completed-count">0</span>
+                    <span class="stat-total">/ 8</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">進行中画面:</span>
+                    <span class="stat-value" id="partial-count">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">要確認画面:</span>
+                    <span class="stat-value" id="needs-check-count">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">未確認画面:</span>
+                    <span class="stat-value" id="pending-count">8</span>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <p id="progress-text">0/8 画面確認完了 (0%)</p>
+        </div>
+
+        <!-- ========== 編集用メモ ========== -->
+        <div class="edit-memo">
+            <h2>編集用メモ</h2>
+            <textarea id="memo" placeholder="チェック項目の追加や修正内容をここにメモしてください..."></textarea>
+        </div>
+
+        <!-- ========== エクスポート機能 ========== -->
+        <div class="export-section">
+            <h2>エクスポート機能</h2>
+            <p class="export-description">チェック結果をエビデンスとして保存できます</p>
+            <div class="export-buttons">
+                <button id="export-html" class="export-btn">HTMLファイルとしてエクスポート</button>
+                <button id="export-pdf" class="export-btn">PDFファイルとしてエクスポート</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== JavaScript機能 ==========
+        
+        // 画面遷移タイプの詳細表示/非表示の切り替え
+        function toggleScreen(id) {
+            const details = document.getElementById(id + '-details');
+            if (details.style.display === 'block') {
+                details.style.display = 'none';
+            } else {
+                details.style.display = 'block';
+            }
+        }
+        
+        // チェック必須タイプの詳細表示/非表示の切り替え
+        function toggleDetails(id) {
+            const checkbox = document.getElementById(id);
+            const details = document.getElementById(id + '-details');
+            
+            // 詳細項目は常に表示（チェックしなくても確認可能）
+            details.style.display = 'block';
+            
+            // メインチェックボックスの変更時もステータスと進捗を更新
+            updateStatus(id);
+        }
+        
+
+
+        // ステータス更新
+        function updateStatus(mainId) {
+            const mainCheckbox = document.getElementById(mainId);
+            const details = document.getElementById(mainId + '-details');
+            const checkboxes = details.querySelectorAll('input[type="checkbox"]');
+            const statusElement = document.getElementById(mainId + '-status');
+            
+            // メインチェックボックスがチェックされている場合
+            if (mainCheckbox.checked) {
+                let checkedCount = 0;
+                checkboxes.forEach(cb => {
+                    if (cb.checked) checkedCount++;
+                });
+                
+                if (checkedCount === 0) {
+                    statusElement.textContent = '要確認';
+                    statusElement.className = 'status needs-check';
+                } else if (checkedCount === checkboxes.length) {
+                    statusElement.textContent = '完了';
+                    statusElement.className = 'status completed';
+                } else {
+                    statusElement.textContent = `${checkedCount}/${checkboxes.length}`;
+                    statusElement.className = 'status partial';
+                }
+            } else {
+                // メインチェックボックスがチェックされていない場合
+                statusElement.textContent = '未確認';
+                statusElement.className = 'status';
+            }
+            
+            updateProgress();
+        }
+
+        // 順次確認の依存関係チェック
+        function checkSequentialDependencies(currentId) {
+            const flowOrder = ['top-page', 'product-list', 'product-detail', 'cart', 'customer-info', 'order-confirm', 'payment', 'email'];
+            const currentIndex = flowOrder.indexOf(currentId);
+            const currentCheckbox = document.getElementById(currentId);
+            
+            if (currentCheckbox.checked) {
+                // 連鎖確認の例外ルール
+                if (currentId === 'top-page' || currentId === 'product-list') {
+                    // 単独確認（連鎖しない）
+                } else if (currentId === 'product-detail') {
+                    // 決済まで連鎖（メール送信は含めない）
+                    const rangeIds = ['cart', 'customer-info', 'order-confirm', 'payment'];
+                    rangeIds.forEach(targetId => {
+                        const targetRequired = document.getElementById(targetId + '-required');
+                        const targetItem = document.getElementById(targetId + '-item');
+                        if (targetRequired) targetRequired.style.display = 'inline';
+                        if (targetItem) targetItem.classList.add('required-by-dependency');
+                    });
+                } else if (currentId === 'order-confirm') {
+                    // 注文内容確認後はカート画面のみ必須表示（お客様画面は含めない）
+                    const targetId = 'cart';
+                    const targetRequired = document.getElementById(targetId + '-required');
+                    const targetItem = document.getElementById(targetId + '-item');
+                    if (targetRequired) targetRequired.style.display = 'inline';
+                    if (targetItem) targetItem.classList.add('required-by-dependency');
+                    
+                    // ご注文内容確認画面自体のすべての項目を確認対象とする
+                    const orderConfirmDetails = document.getElementById('order-confirm-details');
+                    if (orderConfirmDetails) {
+                        const detailCheckboxes = orderConfirmDetails.querySelectorAll('input[type="checkbox"]');
+                        detailCheckboxes.forEach(cb => cb.checked = true);
+                        updateStatus('order-confirm');
+                    }
+                } else {
+                    // 既定: 以降すべてを必須として表示
+                    for (let i = currentIndex + 1; i < flowOrder.length; i++) {
+                        const targetId = flowOrder[i];
+                        const targetRequired = document.getElementById(targetId + '-required');
+                        const targetItem = document.getElementById(targetId + '-item');
+                        if (targetRequired) targetRequired.style.display = 'inline';
+                        if (targetItem) targetItem.classList.add('required-by-dependency');
+                    }
+                }
+            } else {
+                // チェック解除時のリセット範囲
+                if (currentId === 'top-page' || currentId === 'product-list') {
+                    // 単独扱いのため、以降のリセットは行わない
+                } else if (currentId === 'product-detail') {
+                    // 決済までをリセット（メール送信は対象外）
+                    const rangeIds = ['cart', 'customer-info', 'order-confirm', 'payment'];
+                    rangeIds.forEach(targetId => {
+                        const targetCheckbox = document.getElementById(targetId);
+                        const targetRequired = document.getElementById(targetId + '-required');
+                        const targetItem = document.getElementById(targetId + '-item');
+                        const targetDetails = document.getElementById(targetId + '-details');
+                        
+                        if (targetCheckbox) targetCheckbox.checked = false;
+                        if (targetRequired) targetRequired.style.display = 'none';
+                        if (targetItem) targetItem.classList.remove('required-by-dependency');
+                        if (targetDetails) {
+                            targetDetails.style.display = 'block'; // 常に表示
+                            const detailCheckboxes = targetDetails.querySelectorAll('input[type="checkbox"]');
+                            detailCheckboxes.forEach(cb => cb.checked = false);
+                        }
+                        updateStatus(targetId);
+                    });
+                } else if (currentId === 'order-confirm') {
+                    // 注文内容確認解除時はカート画面の必須状態のみ解除（お客様画面は対象外）
+                    const targetId = 'cart';
+                    const targetCheckbox = document.getElementById(targetId);
+                    const targetRequired = document.getElementById(targetId + '-required');
+                    const targetItem = document.getElementById(targetId + '-item');
+                    const targetDetails = document.getElementById(targetId + '-details');
+                    if (targetCheckbox) targetCheckbox.checked = false;
+                    if (targetRequired) targetRequired.style.display = 'none';
+                    if (targetItem) targetItem.classList.remove('required-by-dependency');
+                    if (targetDetails) {
+                        targetDetails.style.display = 'block'; // 常に表示
+                        const detailCheckboxes = targetDetails.querySelectorAll('input[type="checkbox"]');
+                        detailCheckboxes.forEach(cb => cb.checked = false);
+                    }
+                    updateStatus(targetId);
+                } else {
+                    // 既定: 以降すべてをリセット
+                    for (let i = currentIndex + 1; i < flowOrder.length; i++) {
+                        const targetId = flowOrder[i];
+                        const targetCheckbox = document.getElementById(targetId);
+                        const targetRequired = document.getElementById(targetId + '-required');
+                        const targetItem = document.getElementById(targetId + '-item');
+                        const targetDetails = document.getElementById(targetId + '-details');
+                        
+                        if (targetCheckbox) targetCheckbox.checked = false;
+                        if (targetRequired) targetRequired.style.display = 'none';
+                        if (targetItem) targetItem.classList.remove('required-by-dependency');
+                        if (targetDetails) {
+                            targetDetails.style.display = 'block'; // 常に表示
+                            const detailCheckboxes = targetDetails.querySelectorAll('input[type="checkbox"]');
+                            detailCheckboxes.forEach(cb => cb.checked = false);
+                        }
+                        updateStatus(targetId);
+                    }
+                }
+            }
+            
+            // 依存関係変更時も進捗を更新
+            updateProgress();
+        }
+
+        // 全体進捗更新（リアルタイム）
+        function updateProgress() {
+            const checkRequiredItems = document.querySelectorAll('.check-required .main-checkbox');
+            let completedCount = 0;
+            let partialCount = 0;
+            let needsCheckCount = 0;
+            let pendingCount = 0;
+            let totalScreensCount = 0; // チェック済み + 必須表示された画面数
+            
+            checkRequiredItems.forEach(checkbox => {
+                const statusElement = document.getElementById(checkbox.id + '-status');
+                const statusText = statusElement.textContent;
+                const requiredMark = document.getElementById(checkbox.id + '-required');
+                
+                // チェックが入った画面または必須表示された画面をカウント
+                if (checkbox.checked || (requiredMark && requiredMark.style.display === 'inline')) {
+                    totalScreensCount++;
+                    if (statusText === '完了') {
+                        completedCount++;
+                    } else if (statusText === '要確認') {
+                        needsCheckCount++;
+                    } else if (statusText.includes('/')) {
+                        partialCount++;
+                    } else {
+                        pendingCount++;
+                    }
+                } else {
+                    // チェックされていない画面は未確認としてカウント
+                    pendingCount++;
+                }
+            });
+            
+            // 進捗バー更新（チェック済み + 必須表示された画面で計算）
+            const progressPercent = totalScreensCount > 0 ? (completedCount / totalScreensCount) * 100 : 0;
+            document.getElementById('progress-fill').style.width = progressPercent + '%';
+            
+            // 統計情報更新
+            document.getElementById('completed-count').textContent = completedCount;
+            document.getElementById('partial-count').textContent = partialCount;
+            document.getElementById('needs-check-count').textContent = needsCheckCount;
+            document.getElementById('pending-count').textContent = pendingCount;
+            document.getElementById('progress-text').textContent = `${completedCount}/${totalScreensCount} 画面確認完了 (${Math.round(progressPercent)}%)`;
+        }
+
+        // メモの保存（ローカルストレージ）
+        document.getElementById('memo').addEventListener('input', function() {
+            localStorage.setItem('checksheet-memo', this.value);
+        });
+
+        // ページ読み込み時の初期化
+        window.addEventListener('load', function() {
+            // メモを復元
+            const savedMemo = localStorage.getItem('checksheet-memo');
+            if (savedMemo) {
+                document.getElementById('memo').value = savedMemo;
+            }
+            
+            // 確認日を今日の日付に設定
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('check-date').value = today;
+            
+            // 基本情報の保存・復元
+            const savedTaskName = localStorage.getItem('task-name');
+            if (savedTaskName) {
+                document.getElementById('task-name').value = savedTaskName;
+            }
+            
+            const savedName = localStorage.getItem('checker-name');
+            if (savedName) {
+                document.getElementById('checker-name').value = savedName;
+            }
+            
+            // 初期進捗更新
+            updateProgress();
+        });
+
+        // 基本情報の保存
+        document.getElementById('task-name').addEventListener('input', function() {
+            localStorage.setItem('task-name', this.value);
+        });
+        
+        document.getElementById('checker-name').addEventListener('input', function() {
+            localStorage.setItem('checker-name', this.value);
+        });
+
+        // ========== エクスポート機能 ==========
+        
+        // チェック結果データを収集
+        function collectCheckData() {
+            const data = {
+                basicInfo: {
+                    taskName: document.getElementById('task-name').value,
+                    checkerName: document.getElementById('checker-name').value,
+                    checkDate: document.getElementById('check-date').value,
+                    exportDate: new Date().toISOString().split('T')[0],
+                    exportTime: new Date().toLocaleTimeString('ja-JP')
+                },
+                progress: {
+                    completed: parseInt(document.getElementById('completed-count').textContent),
+                    partial: parseInt(document.getElementById('partial-count').textContent),
+                    needsCheck: parseInt(document.getElementById('needs-check-count').textContent),
+                    pending: parseInt(document.getElementById('pending-count').textContent),
+                    percentage: Math.round((parseInt(document.getElementById('completed-count').textContent) / 8) * 100)
+                },
+                screens: [],
+                memo: document.getElementById('memo').value
+            };
+
+            const flowOrder = ['top-page', 'product-list', 'product-detail', 'cart', 'customer-info', 'order-confirm', 'payment', 'email'];
+            const screenNames = ['TOPページ', '商品一覧', '商品詳細画面', 'カートの商品画面', 'お客様画面', 'ご注文内容確認画面', '決済', 'メール送信'];
+
+            flowOrder.forEach((screenId, index) => {
+                const checkbox = document.getElementById(screenId);
+                const statusElement = document.getElementById(screenId + '-status');
+                const details = document.getElementById(screenId + '-details');
+                
+                const screenData = {
+                    name: screenNames[index],
+                    checked: checkbox.checked,
+                    status: statusElement.textContent,
+                    details: []
+                };
+
+                if (details) {
+                    const detailCheckboxes = details.querySelectorAll('input[type="checkbox"]');
+                    detailCheckboxes.forEach(cb => {
+                        const label = cb.nextElementSibling.textContent;
+                        screenData.details.push({
+                            item: label,
+                            checked: cb.checked
+                        });
+                    });
+                }
+
+                data.screens.push(screenData);
+            });
+
+            return data;
+        }
+
+        // HTMLエクスポート
+        document.getElementById('export-html').addEventListener('click', function() {
+            const data = collectCheckData();
+            const html = generateExportHTML(data);
+            downloadFile(html, `EC_チェックシート_${data.basicInfo.checkDate}.html`, 'text/html');
+        });
+
+        // PDFエクスポート
+        document.getElementById('export-pdf').addEventListener('click', function() {
+            const data = collectCheckData();
+            const html = generateExportHTML(data);
+            exportToPDF(html, `EC_チェックシート_${data.basicInfo.checkDate}.pdf`);
+        });
+
+
+
+        // ファイルダウンロード
+        function downloadFile(content, filename, contentType) {
+            const blob = new Blob([content], { type: contentType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // PDFエクスポート
+        async function exportToPDF(htmlContent, filename) {
+            try {
+                // 一時的な要素を作成してHTMLを挿入
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlContent;
+                tempDiv.style.position = 'absolute';
+                tempDiv.style.left = '-9999px';
+                tempDiv.style.top = '0';
+                tempDiv.style.width = '210mm'; // A4幅
+                tempDiv.style.backgroundColor = 'white';
+                document.body.appendChild(tempDiv);
+
+                // html2canvasでキャンバスに変換
+                const canvas = await html2canvas(tempDiv, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff'
+                });
+
+                // 一時要素を削除
+                document.body.removeChild(tempDiv);
+
+                // jsPDFでPDF生成
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgData = canvas.toDataURL('image/png');
+                
+                const imgWidth = 210; // A4幅
+                const pageHeight = 295; // A4高さ
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+
+                let position = 0;
+
+                // 最初のページを追加
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                // 複数ページ対応
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                // PDFダウンロード
+                pdf.save(filename);
+            } catch (error) {
+                console.error('PDF生成エラー:', error);
+                alert('PDF生成中にエラーが発生しました。');
+            }
+        }
+
+        // エクスポート用HTML生成
+        function generateExportHTML(data) {
+            return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EC チェックシート結果</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 20px; line-height: 1.6; }
+        .header { border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+        .info-section { background: #f5f5f5; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .progress { background: #e3f2fd; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .screen { margin-bottom: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .screen-header { background: #f8f9fa; padding: 10px; font-weight: bold; }
+        .screen-header.completed { background: #d4edda; }
+        .screen-header.partial { background: #fff3cd; }
+        .screen-header.needs-check { background: #ffeaa7; }
+        .detail-item { padding: 5px 15px; }
+        .checked { color: #28a745; }
+        .unchecked { color: #dc3545; }
+        .memo { background: #f8f9fa; padding: 15px; margin-top: 20px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>EC本番反映前チェックシート - 結果</h1>
+    </div>
+    
+    <div class="info-section">
+        <h2>基本情報</h2>
+        <p><strong>タスク名:</strong> ${data.basicInfo.taskName || '未入力'}</p>
+        <p><strong>確認者名:</strong> ${data.basicInfo.checkerName || '未入力'}</p>
+        <p><strong>確認日:</strong> ${data.basicInfo.checkDate || '未入力'}</p>
+        <p><strong>エクスポート日時:</strong> ${data.basicInfo.exportDate} ${data.basicInfo.exportTime}</p>
+    </div>
+    
+    <div class="progress">
+        <h2>進捗サマリー</h2>
+        <p><strong>完了画面:</strong> ${data.progress.completed}/8 (${data.progress.percentage}%)</p>
+        <p><strong>進行中画面:</strong> ${data.progress.partial}</p>
+        <p><strong>要確認画面:</strong> ${data.progress.needsCheck}</p>
+        <p><strong>未確認画面:</strong> ${data.progress.pending}</p>
+    </div>
+    
+    <h2>確認結果詳細</h2>
+    ${data.screens.filter(screen => screen.checked || screen.details.some(detail => detail.checked)).map(screen => `
+        <div class="screen">
+            <div class="screen-header ${screen.status === '完了' ? 'completed' : screen.status === '要確認' ? 'needs-check' : screen.status.includes('/') ? 'partial' : ''}">
+                ${screen.name} - ${screen.status}
+            </div>
+            ${screen.details.filter(detail => detail.checked).map(detail => `
+                <div class="detail-item">
+                    <span class="checked">
+                        ✓ ${detail.item}
+                    </span>
+                </div>
+            `).join('')}
+        </div>
+    `).join('')}
+    
+    ${data.memo ? `
+        <div class="memo">
+            <h2>メモ</h2>
+            <pre>${data.memo}</pre>
+        </div>
+    ` : ''}
+</body>
+</html>`;
+        }
+    </script>
+
+    <!-- ========== CSS スタイル（HTML内最下部） ========== -->
+    <style>
+        /* ========== 基本スタイル ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f7fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* ========== ヘッダー ========== */
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        /* ========== 基本情報入力 ========== */
+        .user-info {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .user-info h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.6em;
+        }
+
+        .info-inputs {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
+
+        /* ========== メインフロー ========== */
+        .main-flow {
+            margin-bottom: 30px;
+        }
+
+        .main-flow h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .flow-item {
+            background: white;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .flow-item:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        /* 画面遷移タイプのスタイル */
+        .screen-transition .flow-header {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-bottom: 1px solid #90caf9;
+            cursor: pointer;
+        }
+
+        .screen-number {
+            width: 30px;
+            height: 30px;
+            background: #2196f3;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .arrow {
+            margin-left: 10px;
+            margin-right: 15px;
+            font-size: 1.2em;
+            color: #2196f3;
+            font-weight: bold;
+        }
+
+        /* チェック必須タイプのスタイル */
+        .check-required .flow-header {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            cursor: pointer;
+        }
+
+        .main-checkbox {
+            margin-right: 15px;
+            transform: scale(1.2);
+        }
+
+        .flow-title {
+            flex-grow: 1;
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #2c3e50;
+            cursor: pointer;
+        }
+
+        .arrow {
+            margin-left: 10px;
+            margin-right: 15px;
+            font-size: 1.2em;
+            color: #6c757d;
+            font-weight: bold;
+        }
+
+        .required-mark {
+            background: #dc3545;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        .required-by-dependency {
+            border: 2px solid #dc3545;
+            background-color: #fff5f5;
+        }
+
+        .main-checkbox:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .dependency-note {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #e8f4fd;
+            border-left: 4px solid #2196f3;
+            border-radius: 4px;
+        }
+
+        .dependency-note h5 {
+            color: #1976d2;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .dependency-note p {
+            color: #1976d2;
+            margin: 0;
+            font-size: 0.85em;
+        }
+
+        .status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .status.partial {
+            background-color: #ffc107;
+            color: #212529;
+        }
+
+        .status.completed {
+            background-color: #28a745;
+        }
+
+        .status.needs-check {
+            background-color: #fd7e14;
+            color: white;
+        }
+
+        /* ========== 詳細項目 ========== */
+        .details {
+            display: block;
+            padding: 20px;
+            background-color: white;
+        }
+
+        .details h4 {
+            margin-bottom: 15px;
+            color: #495057;
+            font-size: 1.1em;
+        }
+
+        .check-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 8px;
+            border-radius: 5px;
+            transition: background-color 0.2s ease;
+        }
+
+        .check-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .check-item input[type="checkbox"] {
+            margin-right: 12px;
+            transform: scale(1.1);
+        }
+
+        .check-item label {
+            cursor: pointer;
+            color: #495057;
+        }
+
+        /* ========== 依存関係管理 ========== */
+        .dependencies {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .dependencies h2 {
+            color: #e74c3c;
+            margin-bottom: 15px;
+            font-size: 1.6em;
+        }
+
+        .dependency-info ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .dependency-info li {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 4px;
+        }
+
+        .dependency-info strong {
+            color: #856404;
+        }
+
+        .dependency-rule {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+        }
+
+        .dependency-rule h4 {
+            color: #721c24;
+            margin-bottom: 10px;
+        }
+
+        .dependency-rule p {
+            color: #721c24;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        /* ========== 進捗サマリー ========== */
+        .progress-summary {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .progress-summary h2 {
+            color: #17a2b8;
+            margin-bottom: 15px;
+            font-size: 1.6em;
+        }
+
+        .progress-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .stat-label {
+            display: block;
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .stat-total {
+            font-size: 1.2em;
+            color: #6c757d;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 25px;
+            background-color: #e9ecef;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        #progress-text {
+            text-align: center;
+            font-weight: 600;
+            color: #495057;
+            font-size: 1.1em;
+        }
+
+        /* ========== 編集用メモ ========== */
+        .edit-memo {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .edit-memo h2 {
+            color: #6f42c1;
+            margin-bottom: 15px;
+            font-size: 1.6em;
+        }
+
+        #memo {
+            width: 100%;
+            height: 120px;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        #memo:focus {
+            outline: none;
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
+
+        /* ========== エクスポート機能 ========== */
+        .export-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .export-section h2 {
+            color: #6f42c1;
+            margin-bottom: 10px;
+            font-size: 1.6em;
+        }
+
+        .export-description {
+            color: #6c757d;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+        }
+
+        .export-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .export-btn {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(111, 66, 193, 0.3);
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(111, 66, 193, 0.4);
+        }
+
+        .export-btn:active {
+            transform: translateY(0);
+        }
+
+        /* ========== レスポンシブ対応 ========== */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            header h1 {
+                font-size: 2em;
+            }
+            
+            .info-inputs {
+                flex-direction: column;
+            }
+            
+            .progress-stats {
+                flex-direction: column;
+            }
+            
+            .export-btn {
+                padding: 12px 20px;
+                font-size: 14px;
+            }
+            
+            .flow-header {
+                padding: 12px 15px;
+            }
+            
+            .flow-title {
+                font-size: 1.1em;
+            }
+            
+            .details {
+                padding: 15px;
+            }
+        }
+
+        /* ========== 印刷用スタイル ========== */
+        @media print {
+            body {
+                background-color: white;
+            }
+            
+            .flow-item {
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+            
+            .details {
+                display: block !important;
+            }
+        }
+    </style>
+</body>
+</html>
