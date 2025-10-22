@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>受付一覧</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.20/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .menu li > a.menu-active { background-color: rgb(59 130 246 / 0.1) !important; color: rgb(59 130 246) !important; border-right: 2px solid rgb(59 130 246); font-weight: 600; }
+        .menu li > a:hover:not(.menu-active) { background-color: rgb(0 0 0 / 0.05); }
+    </style>
+</head>
+<body class="bg-base-200 min-h-screen">
+    <div class="drawer lg:drawer-open">
+        <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-side">
+            <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
+            <aside class="min-h-full w-64 bg-base-100 shadow-lg relative">
+                <div id="sidebar-slot"></div>
+            </aside>
+        </div>
+        <div class="drawer-content">
+            <div class="navbar bg-base-100 shadow-sm lg:hidden">
+                <div class="navbar-start">
+                    <label for="drawer-toggle" class="btn btn-square btn-ghost">
+                        <i class="fas fa-bars text-xl"></i>
+                    </label>
+                </div>
+                <div class="navbar-center">
+                    <span class="text-lg font-semibold">受付一覧</span>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <h1 class="text-2xl font-bold mb-6">受付一覧</h1>
+                
+                <!-- 検索・フィルター -->
+                <div class="card bg-base-100 shadow-sm mb-6">
+                    <div class="card-body">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div class="form-control">
+                                <label class="label">
+                                    <span class="label-text">お客様名</span>
+                                </label>
+                                <input type="text" id="searchName" class="input input-bordered" placeholder="お客様名で検索">
+                            </div>
+                            <div class="form-control">
+                                <label class="label">
+                                    <span class="label-text">電話番号</span>
+                                </label>
+                                <input type="tel" id="searchPhone" class="input input-bordered" placeholder="電話番号で検索">
+                            </div>
+                            <div class="form-control">
+                                <label class="label">
+                                    <span class="label-text">日付範囲</span>
+                                </label>
+                                <input type="date" id="searchDateFrom" class="input input-bordered">
+                            </div>
+                            <div class="form-control">
+                                <label class="label">
+                                    <span class="label-text">担当者</span>
+                                </label>
+                                <select id="searchStaff" class="select select-bordered">
+                                    <option value="">すべて</option>
+                                    <option value="tanaka">田中 太郎</option>
+                                    <option value="yamada">山田 花子</option>
+                                    <option value="sato">佐藤 次郎</option>
+                                    <option value="suzuki">鈴木 美咲</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mt-4">
+                            <button class="btn btn-primary" onclick="searchReservations()">
+                                <i class="fas fa-search mr-2"></i>検索
+                            </button>
+                            <button class="btn btn-ghost" onclick="clearSearch()">
+                                <i class="fas fa-times mr-2"></i>クリア
+                            </button>
+                            <button class="btn btn-success" onclick="exportToCSV()">
+                                <i class="fas fa-download mr-2"></i>CSV出力
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 受付一覧テーブル -->
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="card-title">受付一覧</h2>
+                            <div class="flex gap-2">
+                                <button class="btn btn-sm btn-ghost" onclick="selectAll()">
+                                    <i class="fas fa-check-square mr-1"></i>全選択
+                                </button>
+                                <button class="btn btn-sm btn-ghost" onclick="deselectAll()">
+                                    <i class="fas fa-square mr-1"></i>全解除
+                                </button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="table table-zebra">
+                                <thead>
+                                    <tr>
+                                        <th><input type="checkbox" id="selectAllCheckbox" class="checkbox checkbox-sm" onchange="toggleSelectAll()"></th>
+                                        <th>日付</th>
+                                        <th>時間</th>
+                                        <th>お客様名</th>
+                                        <th>電話番号</th>
+                                        <th>メニュー</th>
+                                        <th>担当者</th>
+                                        <th>金額</th>
+                                        <th>ステータス</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reservationList">
+                                    <!-- データがここに動的に挿入されます -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="flex justify-center mt-4">
+                            <div class="join">
+                                <button class="join-item btn btn-sm" onclick="changePage(-1)">«</button>
+                                <button class="join-item btn btn-sm btn-active">1</button>
+                                <button class="join-item btn btn-sm" onclick="changePage(1)">»</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="assets/common.js"></script>
+    <script>
+        let allReservations = [];
+        let filteredReservations = [];
+        let currentPage = 1;
+        const itemsPerPage = 20;
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadReservations();
+        });
+        
+        // 予約データの読み込み
+        function loadReservations() {
+            allReservations = [];
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('schedule_')) {
+                    try {
+                        const data = JSON.parse(localStorage.getItem(key));
+                        if (data && data.date && data.time) {
+                            allReservations.push({
+                                key: key,
+                                ...data
+                            });
+                        }
+                    } catch (e) {
+                        console.error('予約データの読み込みエラー:', e);
+                    }
+                }
+            });
+            
+            // 日付と時間でソート
+            allReservations.sort((a, b) => {
+                const dateA = new Date(a.date + ' ' + a.time);
+                const dateB = new Date(b.date + ' ' + b.time);
+                return dateB - dateA; // 新しい順
+            });
+            
+            filteredReservations = [...allReservations];
+            displayReservations();
+        }
+        
+        // 予約一覧の表示
+        function displayReservations() {
+            const tbody = document.getElementById('reservationList');
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageData = filteredReservations.slice(startIndex, endIndex);
+            
+            tbody.innerHTML = '';
+            
+            if (pageData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center py-8 text-base-content/60">予約データがありません</td></tr>';
+                return;
+            }
+            
+            pageData.forEach(reservation => {
+                const row = document.createElement('tr');
+                const price = reservation.price || estimatePrice(reservation);
+                const status = getStatus(reservation);
+                const statusClass = getStatusClass(status);
+                
+                row.innerHTML = `
+                    <td><input type="checkbox" class="checkbox checkbox-sm reservation-checkbox" data-key="${reservation.key}"></td>
+                    <td>${formatDate(reservation.date)}</td>
+                    <td>${reservation.time}</td>
+                    <td>${reservation.customerName || ''}</td>
+                    <td>${reservation.phone || ''}</td>
+                    <td>${reservation.menu || ''}</td>
+                    <td>${getStaffName(reservation.staff)}</td>
+                    <td>${formatCurrency(price)}</td>
+                    <td><span class="badge ${statusClass}">${status}</span></td>
+                    <td>
+                        <div class="flex gap-1">
+                            <button class="btn btn-xs btn-info" onclick="viewReservation('${reservation.key}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-xs btn-warning" onclick="editReservation('${reservation.key}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-xs btn-error" onclick="deleteReservation('${reservation.key}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        // 検索機能
+        function searchReservations() {
+            const name = document.getElementById('searchName').value.toLowerCase();
+            const phone = document.getElementById('searchPhone').value.replace(/[-\s]/g, '');
+            const dateFrom = document.getElementById('searchDateFrom').value;
+            const staff = document.getElementById('searchStaff').value;
+            
+            filteredReservations = allReservations.filter(reservation => {
+                const matchesName = !name || (reservation.customerName && reservation.customerName.toLowerCase().includes(name));
+                const matchesPhone = !phone || (reservation.phone && reservation.phone.replace(/[-\s]/g, '').includes(phone));
+                const matchesDate = !dateFrom || reservation.date >= dateFrom;
+                const matchesStaff = !staff || reservation.staff === staff;
+                
+                return matchesName && matchesPhone && matchesDate && matchesStaff;
+            });
+            
+            currentPage = 1;
+            displayReservations();
+        }
+        
+        // 検索クリア
+        function clearSearch() {
+            document.getElementById('searchName').value = '';
+            document.getElementById('searchPhone').value = '';
+            document.getElementById('searchDateFrom').value = '';
+            document.getElementById('searchStaff').value = '';
+            filteredReservations = [...allReservations];
+            currentPage = 1;
+            displayReservations();
+        }
+        
+        // 全選択/全解除
+        function selectAll() {
+            const checkboxes = document.querySelectorAll('.reservation-checkbox');
+            checkboxes.forEach(cb => cb.checked = true);
+            document.getElementById('selectAllCheckbox').checked = true;
+        }
+        
+        function deselectAll() {
+            const checkboxes = document.querySelectorAll('.reservation-checkbox');
+            checkboxes.forEach(cb => cb.checked = false);
+            document.getElementById('selectAllCheckbox').checked = false;
+        }
+        
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAllCheckbox').checked;
+            const checkboxes = document.querySelectorAll('.reservation-checkbox');
+            checkboxes.forEach(cb => cb.checked = selectAll);
+        }
+        
+        // ページネーション
+        function changePage(direction) {
+            const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
+            const newPage = currentPage + direction;
+            
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                displayReservations();
+            }
+        }
+        
+        // 予約詳細表示
+        function viewReservation(key) {
+            const reservation = allReservations.find(r => r.key === key);
+            if (reservation) {
+                alert(`予約詳細\nお客様: ${reservation.customerName}\n日付: ${formatDate(reservation.date)}\n時間: ${reservation.time}\nメニュー: ${reservation.menu}\n担当者: ${getStaffName(reservation.staff)}\n金額: ${formatCurrency(reservation.price || estimatePrice(reservation))}`);
+            }
+        }
+        
+        // 予約編集
+        function editReservation(key) {
+            // スケジュール管理画面に遷移して編集
+            window.location.href = `schedule.html?edit=${key}`;
+        }
+        
+        // 予約削除
+        function deleteReservation(key) {
+            if (confirm('この予約を削除しますか？')) {
+                localStorage.removeItem(key);
+                loadReservations();
+            }
+        }
+        
+        // CSV出力
+        function exportToCSV() {
+            const headers = ['日付', '時間', 'お客様名', '電話番号', 'メニュー', '担当者', '金額', 'ステータス'];
+            const csvContent = [
+                headers.join(','),
+                ...filteredReservations.map(reservation => [
+                    formatDate(reservation.date),
+                    reservation.time,
+                    `"${reservation.customerName || ''}"`,
+                    `"${reservation.phone || ''}"`,
+                    `"${reservation.menu || ''}"`,
+                    getStaffName(reservation.staff),
+                    reservation.price || estimatePrice(reservation),
+                    getStatus(reservation)
+                ].join(','))
+            ].join('\n');
+            
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `受付一覧_${new Date().toISOString().slice(0, 10)}.csv`;
+            link.click();
+        }
+        
+        // ユーティリティ関数
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('ja-JP');
+        }
+        
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(amount || 0);
+        }
+        
+        function estimatePrice(reservation) {
+            const menu = (reservation.menu || '').toLowerCase();
+            if (menu.includes('120')) return 12000;
+            if (menu.includes('90')) return 9000;
+            if (menu.includes('60')) return 6000;
+            if (menu.includes('30')) return 3500;
+            return 0;
+        }
+        
+        function getStaffName(staff) {
+            const staffMap = {
+                'tanaka': '田中 太郎',
+                'yamada': '山田 花子',
+                'sato': '佐藤 次郎',
+                'suzuki': '鈴木 美咲'
+            };
+            return staffMap[staff] || staff || '';
+        }
+        
+        function getStatus(reservation) {
+            // 簡易的なステータス判定
+            const now = new Date();
+            const reservationDate = new Date(reservation.date + ' ' + reservation.time);
+            
+            if (reservationDate > now) {
+                return '予約済み';
+            } else {
+                return '完了';
+            }
+        }
+        
+        function getStatusClass(status) {
+            switch (status) {
+                case '予約済み': return 'badge-warning';
+                case '完了': return 'badge-success';
+                default: return 'badge-neutral';
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

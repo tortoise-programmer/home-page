@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理画面ダッシュボード</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.20/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .menu li > a.menu-active { background-color: rgb(59 130 246 / 0.1) !important; color: rgb(59 130 246) !important; border-right: 2px solid rgb(59 130 246); font-weight: 600; }
+        .menu li > a:hover:not(.menu-active) { background-color: rgb(0 0 0 / 0.05); }
+    </style>
+</head>
+<body class="bg-base-200 min-h-screen">
+    <div class="drawer lg:drawer-open">
+        <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
+
+        <div class="drawer-side">
+            <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
+            <aside class="min-h-full w-64 bg-base-100 shadow-lg relative">
+                <div id="sidebar-slot"></div>
+            </aside>
+        </div>
+
+        <div class="drawer-content">
+            <div class="navbar bg-base-100 shadow-sm lg:hidden">
+                <div class="navbar-start">
+                    <label for="drawer-toggle" class="btn btn-square btn-ghost">
+                        <i class="fas fa-bars text-xl"></i>
+                    </label>
+                </div>
+                <div class="navbar-center">
+                    <span class="text-lg font-semibold">ダッシュボード</span>
+                </div>
+            </div>
+
+            <!-- タブUI -->
+            <div class="px-4 lg:px-6">
+                <div role="tablist" class="tabs tabs-bordered w-full mt-2">
+                    <button id="tabDashboard" role="tab" class="tab tab-active">ダッシュボード</button>
+                    <button id="tabAnalytics" role="tab" class="tab">集計</button>
+                </div>
+            </div>
+
+            <div class="p-4 lg:p-6">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="badge badge-warning"><i class="fas fa-exclamation-triangle mr-1"></i>2025年</div>
+                        <div class="text-sm text-base-content/70">07月01日〜07月31日</div>
+                    </div>
+                    <div class="flex items-end gap-4">
+                        <button class="btn btn-ghost btn-sm"><i class="fas fa-chevron-left mr-1"></i>前月へ</button>
+                        <button class="btn btn-ghost btn-sm">次月へ<i class="fas fa-chevron-right ml-1"></i></button>
+                    </div>
+                </div>
+
+                <!-- ダッシュボードタブの内容 -->
+                <div id="dashboardSection">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="card bg-base-100 shadow-xl">
+                            <div class="card-body">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h2 class="card-title text-sm text-base-content/70">来店数（カルテ数）</h2>
+                                        <div class="flex items-center gap-2 mt-2">
+                                            <i class="fas fa-info-circle text-info"></i>
+                                            <div class="text-2xl font-bold">今月: 94名</div>
+                                        </div>
+                                        <div class="text-sm text-base-content/70 mt-1">今日: 6名</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card bg-base-100 shadow-xl">
+                            <div class="card-body">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h2 class="card-title text-sm text-base-content/70">受付中ステータス</h2>
+                                        <div class="flex items-center gap-2 mt-2">
+                                            <i class="fas fa-info-circle text-info"></i>
+                                            <div class="text-2xl font-bold">36件</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card bg-base-100 shadow-xl">
+                            <div class="card-body">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h2 class="card-title text-sm text-base-content/70">新規・リピート</h2>
+                                        <div class="flex items-center gap-2 mt-2">
+                                            <i class="fas fa-info-circle text-info"></i>
+                                            <div class="text-sm">新規: 15名</div>
+                                        </div>
+                                        <div class="text-sm text-base-content/70 mt-1">リピート: 56名</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- 集計タブの内容 -->
+                <div id="analyticsSection" class="hidden">
+                    <div class="grid grid-cols-1 xl:grid-cols-1 gap-6 mb-8">
+                        <div class="card bg-base-100 shadow-xl">
+                            <div class="card-body">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h2 class="card-title">今月総来店数（名）</h2>
+                                    <button class="btn btn-success btn-sm"><i class="fas fa-download mr-1"></i>来店データダウンロード</button>
+                                </div>
+                                <div class="w-full h-96"><canvas id="visitChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <div class="card bg-base-100 shadow-xl">
+                            <div class="card-body">
+                                <h2 class="card-title mb-4">メニュー別</h2>
+                                <div class="w-full h-80"><canvas id="menuChart"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="card bg-base-100 shadow-xl">
+                            <div class="card-body">
+                                <h2 class="card-title mb-4">年齢別</h2>
+                                <div class="w-full h-80"><canvas id="ageChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <div class="card bg-base-100 shadow-xl">
+                            <div class="card-body">
+                                <h2 class="card-title mb-4">新規数顧客数に対する流入経路別割合</h2>
+                                <div class="w-full h-80"><canvas id="inflowChart"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="card bg-base-100 shadow-xl">
+                            <div class="card-body">
+                                <h2 class="card-title mb-4">新規数顧客数に対する症状お悩み別割合</h2>
+                                <div class="w-full h-80"><canvas id="symptomsChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                    <!-- <div class="space-y-6">
+                        <div class="card bg-base-100 shadow-xl">
+                            <div class="card-body">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h2 class="card-title">サービス提供者</h2>
+                                    <a class="btn btn-info btn-sm" href="service_providers.html"><i class="fas fa-plus mr-1"></i>一覧へ</a>
+                                </div>
+                                <div class="space-y-4">
+                                    <div class="flex items-center justify-between p-4 bg-base-200 rounded-lg">
+                                        <div class="flex items-center gap-4">
+                                            <div class="avatar"><div class="w-12 h-12 rounded-full bg-base-300 flex items-center justify-center"><i class="fas fa-dumbbell text-lg text-base-content flex w-full h-full items-center justify-center"></i></div></div>
+                                            <div><h3 class="font-semibold">トレーニング機器A</h3></div>
+                                        </div>
+                                        <div class="flex items-center gap-8 text-center">
+                                            <div><div class="text-2xl font-bold">15</div><div class="text-xs text-base-content/70">登録顧客数</div></div>
+                                            <div><div class="text-2xl font-bold">12</div><div class="text-xs text-base-content/70">今月のカルテ数</div></div>
+                                            <div><div class="text-2xl font-bold">0</div><div class="text-xs text-base-content/70">今月の新規顧客数</div></div>
+                                            <div><div class="text-2xl font-bold">33%</div><div class="text-xs text-base-content/70">今月のリピート率</div></div>
+                                            <a class="btn btn-success btn-sm" href="service_providers.html"><i class="fas fa-edit mr-1"></i>編集する</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card bg-base-100 shadow-xl">
+                            <div class="card-body">
+                                <h2 class="card-title mb-4">スポンサー</h2>
+                                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                                    <div class="aspect-video bg-base-200 rounded-lg flex items-center justify-center"><img src="https://via.placeholder.com/200x100?text=Sponsor1" alt="スポンサー1" class="max-w-full max-h-full object-contain" /></div>
+                                    <div class="aspect-video bg-base-200 rounded-lg flex items-center justify-center"><img src="https://via.placeholder.com/200x100?text=Sponsor2" alt="スポンサー2" class="max-w-full max-h-full object-contain" /></div>
+                                    <div class="aspect-video bg-base-200 rounded-lg flex items-center justify-center"><img src="https://via.placeholder.com/200x100?text=Sponsor3" alt="スポンサー3" class="max-w-full max-h-full object-contain" /></div>
+                                    <div class="aspect-video bg-base-200 rounded-lg flex items-center justify-center"><img src="https://via.placeholder.com/200x100?text=Sponsor4" alt="スポンサー4" class="max-w-full max-h-full object-contain" /></div>
+                                    <div class="aspect-video bg-base-200 rounded-lg flex items-center justify-center"><img src="https://via.placeholder.com/200x100?text=Sponsor5" alt="スポンサー5" class="max-w-full max-h-full object-contain" /></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div> -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/common.js"></script>
+    <script>
+        // タブ切替機能
+        document.getElementById('tabDashboard').addEventListener('click', function() {
+            document.getElementById('dashboardSection').classList.remove('hidden');
+            document.getElementById('analyticsSection').classList.add('hidden');
+            this.classList.add('tab-active');
+            document.getElementById('tabAnalytics').classList.remove('tab-active');
+        });
+
+        document.getElementById('tabAnalytics').addEventListener('click', function() {
+            document.getElementById('analyticsSection').classList.remove('hidden');
+            document.getElementById('dashboardSection').classList.add('hidden');
+            this.classList.add('tab-active');
+            document.getElementById('tabDashboard').classList.remove('tab-active');
+            
+            // 集計タブが表示された時にチャートを初期化
+            if (typeof window.chartsInitialized === 'undefined') {
+                initializeCharts();
+                window.chartsInitialized = true;
+            }
+        });
+
+        // チャート初期化関数
+        function initializeCharts() {
+            const visitCtx = document.getElementById('visitChart').getContext('2d');
+            const visitChart = new Chart(visitCtx, {
+                type: 'line',
+                data: {
+                    labels: ['01日','02日','03日','04日','05日','06日','07日','08日','09日','10日','11日','12日','13日','14日','15日','16日','17日','18日','19日','20日','21日','22日','23日','24日','25日','26日','27日','28日','29日','30日','31日'],
+                    datasets: [{ label: '来店数', data: [1,7,11,16,28,32,38,39,46,53,62,71,87,88,92,94,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], borderColor: '#06b6d4', backgroundColor: '#06b6d4', tension: 0.4, fill: false }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 100 } } }
+            });
+
+            const menuCtx = document.getElementById('menuChart').getContext('2d');
+            const menuChart = new Chart(menuCtx, {
+                type: 'doughnut',
+                data: { labels: ['30分コース','60分コース','60分+ボディ','100分コース','初回限定','その他'], datasets: [{ data: [35,25,15,10,8,7], backgroundColor: ['#10b981','#06b6d4','#f59e0b','#ef4444','#8b5cf6','#6366f1'] }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            const ageCtx = document.getElementById('ageChart').getContext('2d');
+            const ageChart = new Chart(ageCtx, {
+                type: 'doughnut',
+                data: { labels: ['未記入','0-9歳','10-19歳','20-29歳','30-39歳','40-49歳','50-59歳','60歳-'], datasets: [{ data: [5,8,12,15,25,20,10,5], backgroundColor: ['#10b981','#06b6d4','#f59e0b','#ef4444','#8b5cf6','#3b82f6','#6366f1','#06b6d4'] }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            const inflowCtx = document.getElementById('inflowChart').getContext('2d');
+            const inflowChart = new Chart(inflowCtx, {
+                type: 'doughnut', data: { labels: ['未記入'], datasets: [{ data: [100], backgroundColor: ['#10b981'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            const symptomsCtx = document.getElementById('symptomsChart').getContext('2d');
+            const symptomsChart = new Chart(symptomsCtx, {
+                type: 'doughnut', data: { labels: ['未記入'], datasets: [{ data: [100], backgroundColor: ['#10b981'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+    </script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ウェブ予約 - 初回・再来選択</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.20/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+      .btn-line{ background:#06C755 !important; color:#fff !important; border-color:#06C755 !important; }
+      .btn-line:hover{ filter:brightness(0.95); }
+    </style>
+</head>
+<div class="mb-10 flex items-center justify-center">
+    <span class="fa-stack text-primary text-3xl" style="position: relative; width: 2em; height: 2em; display: flex; align-items: center; justify-content: center;">
+        <i class="fas fa-circle fa-stack-2x"></i>
+        <i class="fas fa-hand-holding-medical fa-stack-1x fa-inverse" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);"></i>
+    </span>
+</div>
+<body class="min-h-screen bg-base-200 p-4 flex flex-col items-center justify-center">
+
+    <div class="card w-full max-w-md bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h1 class="card-title text-xl font-bold text-center mb-6">整体・鍼灸 REBO レボ</h1>
+            
+            <a href="02_login.html" class="btn btn-secondary btn-lg w-full">
+                <i class="fas fa-sign-in-alt mr-2"></i>
+                ログイン
+            </a>
+
+                <div class="divider my-6">または</div>
+
+                <a href="06_customer_info.html?mode=signup&skip_course=true" class="btn btn-primary btn-lg w-full">
+                    <i class="fas fa-user-plus mr-2"></i>
+                    新規会員登録（初回の方）
+                </a>
+
+        </div>
+    </div>
+</body>
+</html>

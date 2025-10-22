@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>予約確認・変更・キャンセル - ウェブ予約</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.20/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="min-h-screen bg-base-200 p-4" x-data="reservationManagement()">
+    <div class="container mx-auto max-w-2xl">
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h1 class="card-title text-xl font-bold text-center mb-6">予約確認・変更・キャンセル</h1>
+                
+                <!-- 予約一覧 -->
+                <div class="space-y-4">
+                    <template x-for="reservation in reservations" :key="reservation.id">
+                        <div class="card card-bordered bg-base-50">
+                            <div class="card-body p-4">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <h3 class="font-bold text-base" x-text="reservation.menu"></h3>
+                                        <p class="text-sm text-base-content/70" x-text="reservation.course"></p>
+                                    </div>
+                                    <div class="badge" :class="getStatusClass(reservation.status)" x-text="getStatusText(reservation.status)"></div>
+                                </div>
+                                
+                                <div class="text-sm space-y-1 mb-4">
+                                    <p><strong>予約番号:</strong> <span x-text="reservation.number"></span></p>
+                                    <p><strong>日時:</strong> <span x-text="reservation.datetime"></span></p>
+                                    <p><strong>時間:</strong> <span x-text="reservation.duration"></span>分</p>
+                                    <p><strong>金額:</strong> <span x-text="reservation.price.toLocaleString()"></span>円</p>
+                                </div>
+                                
+                                <div class="card-actions justify-end" x-show="reservation.status === 'confirmed'">
+                                    <button class="btn btn-outline btn-sm" @click="changeReservation(reservation)">変更</button>
+                                    <button class="btn btn-error btn-sm" @click="cancelReservation(reservation)">キャンセル</button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                    
+                    <div x-show="reservations.length === 0" class="text-center py-8 text-base-content/50">
+                        予約はありません
+                    </div>
+                </div>
+                
+                <div class="text-center mt-6">
+                    <a href="08_member_menu.html" class="btn btn-ghost btn-sm">戻る</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- キャンセル確認モーダル -->
+    <div class="modal" :class="showCancelModal ? 'modal-open' : ''">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg">予約をキャンセルしますか？</h3>
+            <div class="py-4">
+                <p class="text-sm">
+                    予約番号: <span x-text="selectedReservation?.number"></span><br>
+                    日時: <span x-text="selectedReservation?.datetime"></span>
+                </p>
+                <div class="alert alert-warning mt-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.962-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+                    <span class="text-xs">キャンセル後は元に戻せません</span>
+                </div>
+            </div>
+            <div class="modal-action">
+                <button class="btn btn-ghost" @click="closeCancelModal()">やめる</button>
+                <button class="btn btn-error" @click="confirmCancel()">キャンセルする</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function reservationManagement() {
+            return {
+                showCancelModal: false,
+                selectedReservation: null,
+                reservations: [
+                    {
+                        id: 1,
+                        number: 'R240115001',
+                        course: '整体・鍼灸',
+                        menu: '全身整体コース',
+                        datetime: '2024年1月15日（月）10:00〜11:00',
+                        duration: 60,
+                        price: 6000,
+                        status: 'confirmed'
+                    },
+                    {
+                        id: 2,
+                        number: 'R240120002',
+                        course: 'BIJIRIS「ビジリス」',
+                        menu: '骨盤底筋強化コース',
+                        datetime: '2024年1月20日（土）14:00〜15:30',
+                        duration: 90,
+                        price: 8000,
+                        status: 'confirmed'
+                    },
+                    {
+                        id: 3,
+                        number: 'R240110003',
+                        course: '整体・鍼灸',
+                        menu: '美容鍼コース',
+                        datetime: '2024年1月10日（水）11:00〜12:30',
+                        duration: 90,
+                        price: 12000,
+                        status: 'completed'
+                    }
+                ],
+                
+                getStatusClass(status) {
+                    switch (status) {
+                        case 'confirmed': return 'badge-success';
+                        case 'completed': return 'badge-neutral';
+                        case 'cancelled': return 'badge-error';
+                        default: return 'badge-ghost';
+                    }
+                },
+                
+                getStatusText(status) {
+                    switch (status) {
+                        case 'confirmed': return '予約確定';
+                        case 'completed': return '完了';
+                        case 'cancelled': return 'キャンセル';
+                        default: return '不明';
+                    }
+                },
+                
+                changeReservation(reservation) {
+                    // 変更画面へ遷移（実装時はパラメータ付きで日時選択画面へ）
+                    window.location.href = `05_date_selection.html?change=${reservation.id}`;
+                },
+                
+                cancelReservation(reservation) {
+                    this.selectedReservation = reservation;
+                    this.showCancelModal = true;
+                },
+                
+                closeCancelModal() {
+                    this.showCancelModal = false;
+                    this.selectedReservation = null;
+                },
+                
+                confirmCancel() {
+                    // 実際はAPIでキャンセル処理
+                    const index = this.reservations.findIndex(r => r.id === this.selectedReservation.id);
+                    if (index !== -1) {
+                        this.reservations[index].status = 'cancelled';
+                    }
+                    this.closeCancelModal();
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>オプション編集</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.20/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-base-200 min-h-screen">
+    <div class="drawer lg:drawer-open">
+        <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-side">
+            <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
+            <aside class="min-h-full w-64 bg-base-100 shadow-lg relative">
+                <div id="sidebar-slot"></div>
+            </aside>
+        </div>
+        <div class="drawer-content">
+            <div class="navbar bg-base-100 shadow-sm lg:hidden">
+                <div class="navbar-start">
+                    <label for="drawer-toggle" class="btn btn-square btn-ghost"><i class="fas fa-bars text-xl"></i></label>
+                </div>
+                <div class="navbar-center">
+                    <span class="text-lg font-semibold">オプション編集</span>
+                </div>
+            </div>
+
+            <div class="p-4 lg:p-6">
+                <div class="breadcrumbs text-sm mb-4">
+                    <ul>
+                        <li><a href="menu_management.html"><i class="fas fa-list mr-1"></i>メニュー管理</a></li>
+                        <li>オプション編集</li>
+                    </ul>
+                </div>
+
+                <div class="flex items-center justify-between mb-4">
+                    <h1 class="text-2xl font-bold">オプション編集</h1>
+                    <div class="space-x-2">
+                        <a href="menu_management.html" class="btn btn-ghost"><i class="fas fa-arrow-left mr-1"></i>戻る</a>
+                        <button id="btnDelete" class="btn btn-error btn-outline hidden"><i class="fas fa-trash mr-1"></i>削除</button>
+                        <button id="btnSave" class="btn btn-primary"><i class="fas fa-save mr-1"></i>保存</button>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body p-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="form-control md:col-span-1">
+                                <label class="label"><span class="label-text">オプション名 <span class="text-error">*</span></span></label>
+                                <input id="f_name" type="text" class="input input-bordered" placeholder="例: ヘッドスパ" />
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">追加時間（分）</span></label>
+                                <input id="f_minutes" type="number" class="input input-bordered" placeholder="10" min="0" />
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">追加料金（税込） <span class="text-error">*</span></span></label>
+                                <input id="f_price" type="number" class="input input-bordered" placeholder="1000" min="0" />
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">税率（%）</span></label>
+                                <input id="f_tax" type="number" class="input input-bordered" placeholder="10" min="0" max="100" />
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">表示/公開</span></label>
+                                <select id="f_status" class="select select-bordered">
+                                    <option value="active">公開</option>
+                                    <option value="inactive">非公開</option>
+                                </select>
+                            </div>
+                            <div class="form-control md:col-span-2">
+                                <label class="label"><span class="label-text">メモ（任意）</span></label>
+                                <input id="f_note" type="text" class="input input-bordered" placeholder="組み合わせ条件などのメモ" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/common.js"></script>
+    <script>
+        function loadMenus(){ try{ const raw=localStorage.getItem('menus'); return raw?JSON.parse(raw):[]; }catch{return []} }
+        function saveMenus(list){ try{ localStorage.setItem('menus', JSON.stringify(list)); }catch{} }
+        function getParam(name){ const u=new URL(location.href); return u.searchParams.get(name); }
+        function generateId(list){ let max=0; list.forEach(x=>{ const n=parseInt(x.id,10)||0; if(n>max) max=n; }); return max+1; }
+
+        let currentId = null;
+        document.addEventListener('DOMContentLoaded', function(){
+            currentId = getParam('id');
+            const list = loadMenus();
+            let rec = null;
+            if(currentId){ rec = list.find(x=> String(x.id)===String(currentId)); }
+
+            if(rec){
+                document.getElementById('f_name').value = rec.name||'';
+                document.getElementById('f_minutes').value = rec.minutes||'';
+                document.getElementById('f_price').value = rec.price||'';
+                document.getElementById('f_tax').value = rec.tax||'';
+                document.getElementById('f_status').value = rec.status||'active';
+                document.getElementById('f_note').value = (rec.option && rec.option.note) || '';
+                document.getElementById('btnDelete').classList.remove('hidden');
+            }
+
+            document.getElementById('btnSave').addEventListener('click', onSave);
+            document.getElementById('btnDelete').addEventListener('click', onDelete);
+        });
+
+        function onSave(){
+            const name=document.getElementById('f_name').value.trim();
+            const minutes=parseInt(document.getElementById('f_minutes').value,10)||0;
+            const price=parseInt(document.getElementById('f_price').value,10);
+            const tax=parseInt(document.getElementById('f_tax').value,10)||0;
+            const status=document.getElementById('f_status').value;
+            const note=document.getElementById('f_note').value||'';
+
+            if(!name){ alert('オプション名は必須です'); return; }
+            if(!(price>=0)){ alert('料金は数値で入力してください'); return; }
+
+            const list=loadMenus();
+            const now=Date.now();
+            if(currentId){
+                const idx=list.findIndex(x=> String(x.id)===String(currentId));
+                if(idx<0){ alert('対象データが見つかりません'); return; }
+                list[idx] = { ...list[idx], type:'option', name, minutes, price, tax, status, option:{ ...(list[idx].option||{}), note }, updatedAt: now };
+                saveMenus(list);
+            } else {
+                const newId = generateId(list);
+                const rec = { id:newId, type:'option', name, minutes, price, tax, status, option:{ note }, updatedAt: now };
+                list.push(rec); saveMenus(list);
+            }
+            location.href='menu_management.html';
+        }
+        function onDelete(){ if(!currentId) return; if(!confirm('削除しますか？')) return; const list=loadMenus().filter(x=> String(x.id)!==String(currentId)); saveMenus(list); location.href='menu_management.html'; }
+    </script>
+</body>
+</html>
+
+

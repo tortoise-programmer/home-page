@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>コース選択 - ウェブ予約</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.20/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body class="min-h-screen bg-base-200 p-4" x-data="courseSelection()">
+    <div class="container mx-auto max-w-md">
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h1 class="card-title text-xl font-bold text-center justify-center mb-6">種類選択</h1>
+                <!-- ステップフロー -->
+                <div class="steps steps-horizontal w-full mb-8">
+                    <div class="step step-primary">予約内容</div>
+                    <div class="step">予約日時</div>
+                    <div class="step">予約者情報</div>
+                    <div class="step">内容確認</div>
+                </div>
+                
+                <!-- 戻るボタン -->
+                <div class="flex justify-start mb-4">
+                    <a href="01_index.html" class="btn btn-ghost btn-sm">
+                        ← 戻る
+                    </a>
+                </div>
+                
+                <!-- コース選択省略オプション -->
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        <div class="font-semibold">コース選択をスキップ</div>
+                        <div class="text-sm">一般的な整体・鍼灸メニューから選択できます</div>
+                    </div>
+                    <a href="04_menu_selection.html?course=general" class="btn btn-sm btn-primary">
+                        スキップして次へ
+                    </a>
+                </div>
+
+                <div class="space-y-3">
+                    <a href="04_menu_selection.html?course=seitai" class="btn btn-outline btn-lg w-full text-left justify-start h-auto p-4 type-propagate">
+                        <div>
+                            <div class="text-base font-semibold">整体・鍼灸</div>
+                            <div class="text-sm opacity-70">（美容鍼・Body鍼）</div>
+                        </div>
+                    </a>
+                    
+                    <a href="04_menu_selection.html?course=bijiris" class="btn btn-outline btn-lg w-full text-left justify-start h-auto p-4 type-propagate">
+                        <div>
+                            <div class="text-base font-semibold">BIJIRIS「ビジリス」</div>
+                            <div class="text-sm opacity-70">骨盤底筋＆ヒップ強化！</div>
+                        </div>
+                    </a>
+                    
+                    <a href="04_menu_selection.html?course=tokutoku" 
+                       class="btn btn-outline btn-lg w-full text-left justify-start h-auto p-4 type-propagate"
+                       :class="{ 'btn-disabled': !canSelectFirstTimeCourse }"
+                       :disabled="!canSelectFirstTimeCourse">
+                        <div>
+                            <div class="text-base font-semibold">お得なコース</div>
+                            <div class="text-sm opacity-70">（電磁パルスチェア「ビジリス」）</div>
+                            <div class="text-xs text-error mt-1" x-show="!canSelectFirstTimeCourse">
+                                <i class="fas fa-lock mr-1"></i>初回限定コース（既に利用済み）
+                            </div>
+                        </div>
+                    </a>
+                    
+                    <a href="04_menu_selection.html?course=other" class="btn btn-outline btn-lg w-full text-left justify-start h-auto p-4 type-propagate">
+                        <div>
+                            <div class="text-base font-semibold">その他</div>
+                            <div class="text-sm opacity-70">その他のメニュー</div>
+                        </div>
+                    </a>
+                </div>
+                
+                <div class="text-center mt-6">
+                    <a id="back-link" href="01_index.html" class="btn btn-ghost btn-sm">戻る</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        (function(){
+            try{
+                var params = new URLSearchParams(location.search);
+                var type = params.get('type') || (function(){ try{return sessionStorage.getItem('visitType')||''}catch(e){return ''} })();
+                if(type !== 'first' && type !== 'repeat') return;
+                document.querySelectorAll('a.type-propagate').forEach(function(a){
+                    var url = new URL(a.getAttribute('href'), location.href);
+                    url.searchParams.set('type', type);
+                    a.setAttribute('href', url.pathname + url.search);
+                });
+                var back = document.getElementById('back-link');
+                if(back){
+                    var backUrl = new URL(back.getAttribute('href'), location.href);
+                    backUrl.searchParams.set('type', type);
+                    back.setAttribute('href', backUrl.pathname + backUrl.search);
+                }
+            }catch(e){ console.error(e); }
+        })();
+    </script>
+    
+    <script>
+        function courseSelection() {
+            return {
+                memberInfo: null,
+                visitCount: 0,
+                
+                get canSelectFirstTimeCourse() {
+                    // 初回限定コースは来店回数が0回の場合のみ選択可能
+                    return this.visitCount === 0;
+                },
+                
+                init() {
+                    // セッションストレージから会員情報を取得
+                    const memberData = sessionStorage.getItem('memberInfo');
+                    if (memberData) {
+                        this.memberInfo = JSON.parse(memberData);
+                        this.visitCount = this.memberInfo.visitCount || 0;
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

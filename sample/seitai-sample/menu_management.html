@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メニュー管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.20/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .menu li > a.menu-active { background-color: rgb(59 130 246 / 0.1) !important; color: rgb(59 130 246) !important; border-right: 2px solid rgb(59 130 246); font-weight: 600; }
+        .menu li > a:hover:not(.menu-active) { background-color: rgb(0 0 0 / 0.05); }
+    </style>
+</head>
+<body class="bg-base-200 min-h-screen">
+    <div class="drawer lg:drawer-open">
+        <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-side">
+            <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
+            <aside class="min-h-full w-64 bg-base-100 shadow-lg relative">
+                <div id="sidebar-slot"></div>
+            </aside>
+        </div>
+        <div class="drawer-content">
+            <div class="navbar bg-base-100 shadow-sm lg:hidden">
+                <div class="navbar-start">
+                    <label for="drawer-toggle" class="btn btn-square btn-ghost">
+                        <i class="fas fa-bars text-xl"></i>
+                    </label>
+                </div>
+                <div class="navbar-center">
+                    <span class="text-lg font-semibold">メニュー管理</span>
+                </div>
+            </div>
+            <div class="p-4 lg:p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="join">
+                        <input id="menuSearchInput" type="text" class="input input-bordered join-item w-72" placeholder="サービス名" />
+                        <button class="btn btn-primary join-item" onclick="searchMenus()"><i class="fas fa-search mr-1"></i>検索する</button>
+                    </div>
+                    <button id="btnCreate" class="btn btn-primary" onclick="createNew()"><i class="fas fa-plus mr-1"></i><span id="btnCreateText">新規作成</span></button>
+                </div>
+
+                <div class="flex items-center justify-between mb-3">
+                    <div role="tablist" class="tabs tabs-boxed">
+                        <a role="tab" id="tabMenu" class="tab tab-active" onclick="switchMenuTab('menu')">メニュー一覧</a>
+                        <a role="tab" id="tabOption" class="tab" onclick="switchMenuTab('option')">オプションメニュー一覧</a>
+                        <a role="tab" id="tabGoods" class="tab" onclick="switchMenuTab('goods')">物販メニュー一覧</a>
+                    </div>
+                </div>
+
+                <div id="menuListSection">
+                    <div class="card bg-base-100 shadow-xl">
+                        <div class="card-body p-4">
+                            <div class="overflow-x-auto">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th class="w-16">並び替え</th>
+                                            <th>サービス名</th>
+                                            <th class="w-24">提供時間</th>
+                                            <th class="w-28">料金（税込）</th>
+                                            <th class="w-20">税率（%）</th>
+                                            <th class="w-64"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="menuListTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="optionListSection" class="hidden">
+                    <div class="card bg-base-100 shadow-xl">
+                        <div class="card-body p-4">
+                            <div class="overflow-x-auto">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th class="w-16">並び替え</th>
+                                            <th>オプション名</th>
+                                            <th class="w-24">提供時間</th>
+                                            <th class="w-28">料金（税込）</th>
+                                            <th class="w-20">税率（%）</th>
+                                            <th class="w-64"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="optionListTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="goodsListSection" class="hidden">
+                    <div class="card bg-base-100 shadow-xl">
+                        <div class="card-body p-4">
+                            <div class="overflow-x-auto">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th class="w-16">並び替え</th>
+                                            <th>商品名</th>
+                                            <th class="w-24">提供時間</th>
+                                            <th class="w-28">料金（税込）</th>
+                                            <th class="w-20">税率（%）</th>
+                                            <th class="w-64"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="goodsListTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/common.js"></script>
+    <script>
+        function switchMenuTab(type){ const tabs={ menu:{tab:'tabMenu',section:'menuListSection'}, option:{tab:'tabOption',section:'optionListSection'}, goods:{tab:'tabGoods',section:'goodsListSection'} }; Object.keys(tabs).forEach(k=>{ const t=document.getElementById(tabs[k].tab); const s=document.getElementById(tabs[k].section); if(t) t.classList.remove('tab-active'); if(s) s.classList.add('hidden'); }); const a=tabs[type]; if(a){ const t=document.getElementById(a.tab); const s=document.getElementById(a.section); if(t) t.classList.add('tab-active'); if(s) s.classList.remove('hidden'); } updateCreateButton(); }
+        function searchMenus(){ const input=document.getElementById('menuSearchInput'); const keyword=(input && input.value ? input.value : '').trim(); const rows=document.querySelectorAll('#menuListTableBody tr'); rows.forEach(row=>{ const text=row.cells[1] ? row.cells[1].innerText : ''; row.classList.toggle('hidden', keyword && !text.includes(keyword)); }); }
+        function loadMenus(){ try{ const raw=localStorage.getItem('menus'); return raw?JSON.parse(raw):[]; }catch{return []} }
+        function saveMenus(list){ try{ localStorage.setItem('menus', JSON.stringify(list)); }catch{} }
+        function deleteMenu(id){ const list=loadMenus().filter(x=> String(x.id)!==String(id)); saveMenus(list); renderMenus(); }
+        function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
+        function formatPrice(n){ const x=parseInt(n,10); if(isNaN(x)) return '-'; return `￥${x.toLocaleString('ja-JP')}`; }
+        function rowHtml(x){ const minutes=(x.type==='goods'||!x.minutes)? '-' : `${x.minutes}分`; const editHref = (x.type==='option')? `option_edit.html?id=${encodeURIComponent(x.id)}` : `menu_edit.html?id=${encodeURIComponent(x.id)}`; return `
+            <tr>
+                <td><i class="fas fa-grip-vertical text-base-content/60"></i></td>
+                <td>${escapeHtml(x.name||'')}</td>
+                <td>${minutes}</td>
+                <td>${formatPrice(x.price)}</td>
+                <td>${x.tax??''}</td>
+                <td class="space-x-2">
+                    <button class="btn btn-info btn-xs">予約先選択<i class="fas fa-caret-down ml-1"></i></button>
+                    <a class="btn btn-success btn-xs" href="${editHref}">編集する</a>
+                    <button class="btn btn-error btn-xs" onclick="deleteMenu('${x.id}')">削除する</button>
+                </td>
+            </tr>`; }
+        function renderMenus(){ const list=loadMenus(); const menu=list.filter(x=> (x.type||'menu')==='menu'); const opt=list.filter(x=> x.type==='option'); const goods=list.filter(x=> x.type==='goods'); const b1=document.getElementById('menuListTableBody'); const b2=document.getElementById('optionListTableBody'); const b3=document.getElementById('goodsListTableBody'); if(b1) b1.innerHTML = menu.map(rowHtml).join(''); if(b2) b2.innerHTML = opt.map(rowHtml).join(''); if(b3) b3.innerHTML = goods.map(rowHtml).join(''); }
+        function getActiveTab(){ if(document.getElementById('tabOption')?.classList.contains('tab-active')) return 'option'; if(document.getElementById('tabGoods')?.classList.contains('tab-active')) return 'goods'; return 'menu'; }
+        function updateCreateButton(){ const t=getActiveTab(); const text=document.getElementById('btnCreateText'); if(text){ if(t==='option') text.textContent='オプションを新規作成'; else if(t==='goods') text.textContent='物販を新規作成'; else text.textContent='メニューを新規作成'; } }
+        function createNew(){ const t=getActiveTab(); if(t==='option'){ location.href='option_edit.html'; } else if(t==='goods'){ location.href='menu_edit.html?type=goods'; } else { location.href='menu_edit.html'; } }
+        document.addEventListener('DOMContentLoaded', ()=>{ renderMenus(); updateCreateButton(); });
+    </script>
+</body>
+</html>
+
+
+

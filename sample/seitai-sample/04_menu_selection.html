@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メニュー選択 - ウェブ予約</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<style>
+   
+</style>
+<body class="min-h-screen bg-base-200 p-4" x-data="menuSelection()">
+    <div class="container mx-auto max-w-4xl">
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h1 class="card-title text-xl font-bold text-center justify-center mb-6">コース選択</h1>
+
+                <!-- ステップフロー -->
+                <div class="steps steps-horizontal w-full mb-8">
+                    <div class="step step-primary">予約内容</div>
+                    <div class="step">予約日時</div>
+                    <div class="step">予約者情報</div>
+                    <div class="step">内容確認</div>
+                </div>
+                
+                <!-- 戻るボタン -->
+                <div class="flex justify-start mb-4">
+                    <a :href="'03_course_selection.html' + (lockedType ? ('?type=' + lockedType) : '')" class="btn btn-ghost btn-sm">
+                        ← 戻る
+                    </a>
+                </div>
+                
+                
+                <!-- タブ -->
+                <div class="flex justify-between gap-2 mb-6" x-show="!lockedType">
+                    <button class="btn btn-outline flex-1" :class="activeTab === 'all' ? 'btn-active btn-primary' : ''" @click="activeTab = 'all'">すべて</button>
+                    <button class="btn btn-outline flex-1" :class="activeTab === 'first' ? 'btn-active btn-primary' : ''" @click="activeTab = 'first'">初回のみ</button>
+                    <button class="btn btn-outline flex-1" :class="activeTab === 'repeat' ? 'btn-active btn-primary' : ''" @click="activeTab = 'repeat'">2回目以降</button>
+                </div>
+                
+                <!-- 絞り込み -->
+                <div class="card bg-base-200 border border-base-300 mb-6">
+                    <div class="card-body p-4">
+                        <h3 class="text-sm font-medium mb-3">絞り込み条件</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="form-control">
+                                <label class="label py-1">
+                                    <span class="label-text text-xs">時間</span>
+                                </label>
+                                <select class="select select-bordered select-sm" x-model="filters.duration">
+                                    <option value="">指定なし</option>
+                                    <option value="30">30分</option>
+                                    <option value="60">60分</option>
+                                    <option value="90">90分</option>
+                                    <option value="120">120分</option>
+                                </select>
+                            </div>
+                            <div class="form-control">
+                                <label class="label py-1">
+                                    <span class="label-text text-xs">金額</span>
+                                </label>
+                                <select class="select select-bordered select-sm" x-model="filters.price">
+                                    <option value="">指定なし</option>
+                                    <option value="5000">〜5,000円</option>
+                                    <option value="10000">〜10,000円</option>
+                                    <option value="15000">〜15,000円</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- メニュー一覧 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <template x-for="menu in filteredMenus" :key="menu.id">
+                        <div class="card bg-base-100 border border-base-300 shadow-sm">
+                            <figure class="h-32 bg-base-300">
+                                <div class="w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                                    <span class="text-sm text-base-content/50">画像</span>
+                                </div>
+                            </figure>
+                            <div class="card-body p-4">
+                                <h3 class="card-title text-sm" x-text="menu.name"></h3>
+                                <div class="text-xs space-y-1 mb-3">
+                                    <p>時間: <span x-text="menu.duration"></span>分</p>
+                                    <p>金額: <span x-text="menu.price.toLocaleString()"></span>円</p>
+                                </div>
+                                <div class="card-actions justify-between">
+                                    <button class="btn btn-secondary !h-9 !min-h-4 py-2 px-4" @click="showModal(menu)">詳細</button>
+                                    <a :href="'05_date_selection.html?menu=' + menu.id" class="btn btn-primary !h-9 !min-h-4 py-2 px-4">選択</a>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                
+                <div class="text-center mt-6">
+                    <a href="03_course_selection.html" class="btn btn-ghost btn-sm">戻る</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- モーダル -->
+    <div class="modal" :class="showModalFlag ? 'modal-open' : ''">
+        <div class="modal-box">
+            <!-- モーダル画像 -->
+            <figure class="h-48 bg-base-300 mb-4 rounded-lg">
+                <div class="w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                    <span class="text-base text-base-content/50">メニュー画像</span>
+                </div>
+            </figure>
+            
+            <h3 class="font-bold text-lg" x-text="selectedMenu?.name"></h3>
+            <div class="py-4">
+                <div class="space-y-2 text-sm">
+                    <p><strong>時間:</strong> <span x-text="selectedMenu?.duration"></span>分</p>
+                    <p><strong>金額:</strong> <span x-text="selectedMenu?.price.toLocaleString()"></span>円</p>
+                    <p><strong>対象:</strong> <span x-text="selectedMenu?.target"></span></p>
+                    <p><strong>内容:</strong></p>
+                    <p class="text-xs leading-relaxed" x-text="selectedMenu?.description"></p>
+                </div>
+            </div>
+            <div class="modal-action">
+                <button class="btn btn-ghost" @click="closeModal()">閉じる</button>
+                <a :href="'05_date_selection.html?menu=' + selectedMenu?.id" class="btn btn-primary">このメニューを選択</a>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function menuSelection() {
+            return {
+                activeTab: 'all',
+                lockedType: (function(){
+                    try{
+                        var t = new URLSearchParams(location.search).get('type');
+                        if(t === 'first' || t === 'repeat') return t;
+                        try{
+                            var s = sessionStorage.getItem('visitType');
+                            if(s === 'first' || s === 'repeat') return s;
+                        }catch(_e){}
+                        return '';
+                    }catch(e){ return ''; }
+                })(),
+                showModalFlag: false,
+                selectedMenu: null,
+                filters: {
+                    duration: '',
+                    price: ''
+                },
+                menus: [
+                    {
+                        id: 1,
+                        name: '全身整体コース',
+                        duration: 60,
+                        price: 6000,
+                        target: 'すべて',
+                        category: 'all',
+                        description: '全身の歪みを整える基本的な整体コースです。肩こり、腰痛、姿勢改善に効果的です。'
+                    },
+                    {
+                        id: 2,
+                        name: '初回限定お試しコース',
+                        duration: 45,
+                        price: 3500,
+                        target: '初回のみ',
+                        category: 'first',
+                        description: '初めての方限定のお得なコースです。カウンセリング込みで基本的な施術を体験いただけます。'
+                    },
+                    {
+                        id: 3,
+                        name: '美容鍼コース',
+                        duration: 90,
+                        price: 12000,
+                        target: 'すべて',
+                        category: 'all',
+                        description: '美容効果の高い鍼治療です。お肌のハリ・ツヤの改善、小顔効果が期待できます。'
+                    },
+                    {
+                        id: 4,
+                        name: 'ビジリス体験コース',
+                        duration: 30,
+                        price: 2000,
+                        target: '初回のみ',
+                        category: 'first',
+                        description: '骨盤底筋を鍛えるビジリスマシンの体験コースです。ヒップアップ効果が期待できます。'
+                    },
+                    {
+                        id: 5,
+                        name: 'VIP会員コース',
+                        duration: 120,
+                        price: 15000,
+                        target: '2回目以降',
+                        category: 'repeat',
+                        description: '会員様限定の特別コースです。全身整体とリラクゼーションを組み合わせた贅沢なコースです。'
+                    }
+                ],
+                get filteredMenus() {
+                    let filtered = this.menus;
+                    
+                    // ロックタイプがあれば最優先で適用
+                    if (this.lockedType) {
+                        filtered = filtered.filter(menu => menu.category === this.lockedType);
+                    } else if (this.activeTab !== 'all') {
+                        filtered = filtered.filter(menu => menu.category === this.activeTab);
+                    }
+                    
+                    // 時間フィルター
+                    if (this.filters.duration) {
+                        filtered = filtered.filter(menu => menu.duration <= parseInt(this.filters.duration));
+                    }
+                    
+                    // 金額フィルター
+                    if (this.filters.price) {
+                        filtered = filtered.filter(menu => menu.price <= parseInt(this.filters.price));
+                    }
+                    
+                    return filtered;
+                },
+                init(){
+                    if(this.lockedType){ this.activeTab = this.lockedType; }
+                },
+                showModal(menu) {
+                    this.selectedMenu = menu;
+                    this.showModalFlag = true;
+                },
+                closeModal() {
+                    this.showModalFlag = false;
+                    this.selectedMenu = null;
+                }
+            }
+        }
+    </script>
+</body>
+</html>

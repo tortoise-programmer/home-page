@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スケジュール管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.20/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .menu li > a.menu-active { background-color: rgb(59 130 246 / 0.1) !important; color: rgb(59 130 246) !important; border-right: 2px solid rgb(59 130 246); font-weight: 600; }
+        .menu li > a:hover:not(.menu-active) { background-color: rgb(0 0 0 / 0.05); }
+        .schedule-table { table-layout: fixed; width: 100%; }
+        .schedule-table th:first-child, .schedule-table td:first-child { width: 80px; min-width: 80px; }
+        .schedule-table th:not(:first-child), .schedule-table td:not(:first-child) { width: 150px; min-width: 150px; }
+        @media (max-width: 768px) {
+            .schedule-table th:first-child, .schedule-table td:first-child { width: 60px; min-width: 60px; }
+            .schedule-table th:not(:first-child), .schedule-table td:not(:first-child) { width: calc((100vw - 100px) / 2); min-width: 120px; }
+            .time-input { width: 80px !important; min-width: 80px !important; }
+            .date-input { flex: 1; }
+            .menu-input { width: 100% !important; }
+            .datetime-input { width: 100% !important; }
+        }
+        .schedule-table.month-mode { table-layout: fixed; width: 100%; }
+        .schedule-table.month-mode thead th, .schedule-table.month-mode tbody td { width: calc(100% / 7) !important; }
+        .schedule-table.month-mode tbody td { position: relative; }
+        .schedule-table.month-mode .day-number { position: absolute; top: 6px; right: 8px; font-size: 12px; font-weight: 600; opacity: 0.8; pointer-events: none; }
+        .schedule-table.month-mode .day-content { margin-top: 1.25rem; }
+        .reservation-card, .empty-slot { min-height: 80px; height: 80px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .reservation-card { padding: 8px !important; text-align: left; }
+        .time-cell { height: 120px; width: 100%; border-radius: 6px; position: relative; cursor: pointer; background-image: repeating-linear-gradient(to bottom, rgba(0,0,0,0.06) 0px, rgba(0,0,0,0.06) 1px, transparent 1px, transparent 12.5%); transition: background-color 0.15s ease; }
+        .day-hour-cell { position: relative; height: 120px; }
+.interval-block { position: absolute; left: 0; right: 0; bottom: 0; background: repeating-linear-gradient(45deg, rgba(234, 179, 8, 0.25), rgba(234, 179, 8, 0.25) 6px, rgba(234, 179, 8, 0.15) 6px, rgba(234, 179, 8, 0.15) 12px); border-top: 1px dashed rgba(234, 179, 8, 0.7); pointer-events: none; }
+        .event-block { position: absolute; left: 4px; right: 4px; border-radius: 6px; color: #fff; padding: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); font-size: 12px; overflow: hidden; }
+        .schedule-card { min-height: 80px; padding: 12px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer; transition: all 0.2s ease; position: relative; text-align: left; }
+        .schedule-card .edit-icon { position: absolute; top: 8px; right: 8px; opacity: 0.7; transition: opacity 0.2s ease; }
+        .schedule-card:hover .edit-icon { opacity: 1; }
+        .staff-tanaka { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
+        .staff-yamada { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+        .staff-sato { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
+        .staff-suzuki { background: linear-gradient(135deg, #eab308, #ca8a04); color: white; }
+        .staff-equipment { background: linear-gradient(135deg, #6b7280, #4b5563); color: white; }
+    </style>
+</head>
+<body class="bg-base-200 min-h-screen">
+    <div class="drawer lg:drawer-open">
+        <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-side">
+            <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
+            <aside class="min-h-full w-64 bg-base-100 shadow-lg relative">
+                <div id="sidebar-slot"></div>
+            </aside>
+        </div>
+        <div class="drawer-content">
+            <div class="navbar bg-base-100 shadow-sm lg:hidden">
+                <div class="navbar-start">
+                    <label for="drawer-toggle" class="btn btn-square btn-ghost">
+                        <i class="fas fa-bars text-xl"></i>
+                    </label>
+                </div>
+                <div class="navbar-center">
+                    <span class="text-lg font-semibold">スケジュール管理</span>
+                </div>
+            </div>
+
+            <div class="p-2 lg:p-6">
+                <h1 class="text-2xl font-bold mb-4">スケジュール管理</h1>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                    <div class="card bg-base-100 shadow-sm">
+                        <div class="card-body p-2 lg:p-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <button class="btn btn-info btn-sm" onclick="goToToday()">今日</button>
+                                <input type="date" class="input input-bordered input-sm" id="datePicker" onchange="changeSelectedDate()" />
+                            </div>
+                            <div id="weekRangePicker" class="hidden">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="text-sm">週:</span>
+                                    <input type="date" class="input input-bordered input-sm" id="weekStartDate" onchange="changeWeekRange()" />
+                                    <span class="text-sm">〜</span>
+                                    <input type="date" class="input input-bordered input-sm" id="weekEndDate" onchange="changeWeekRange()" />
+                                </div>
+                            </div>
+                            <div class="text-sm">
+                                <a href="#" class="link link-primary">予約ページを表示する</a>
+                            </div>
+                            <div class="form-control mt-2">
+                                <label class="label cursor-pointer justify-start gap-2">
+                                    <input type="checkbox" class="toggle toggle-success" checked />
+                                    <span class="label-text text-sm">公開中</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card bg-base-100 shadow-sm">
+                        <div class="card-body p-2 lg:p-4">
+                            <h3 class="font-semibold mb-2">デイリーメモ</h3>
+                            <textarea class="textarea textarea-bordered w-full h-20" placeholder="メモを保存・表示できます"></textarea>
+                            <div class="card-actions justify-end mt-2">
+                                <button class="btn btn-info btn-sm"><i class="fas fa-save mr-1"></i>保存</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="form-control">
+                        <label class="label"><span class="label-text text-sm">表示形式</span></label>
+                        <div class="join">
+                            <input class="join-item btn btn-sm" type="radio" name="calendarView" aria-label="日" value="day" checked onchange="changeCalendarView()" />
+                            <input class="join-item btn btn-sm" type="radio" name="calendarView" aria-label="週" value="week" onchange="changeCalendarView()" />
+                            <input class="join-item btn btn-sm" type="radio" name="calendarView" aria-label="月" value="month" onchange="changeCalendarView()" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-4 mb-4">
+                    <div class="form-control">
+                        <label class="label"><span class="label-text text-sm">スケジュール表示</span></label>
+                        <div class="join">
+                            <input class="join-item btn btn-sm" type="radio" name="view" aria-label="すべて" value="all" checked onchange="updateScheduleView()" />
+                            <input class="join-item btn btn-sm" type="radio" name="view" aria-label="部屋のみ" value="room" onchange="updateScheduleView()" />
+                            <input class="join-item btn btn-sm" type="radio" name="view" aria-label="スタッフのみ" value="staff" onchange="updateScheduleView()" />
+                        </div>
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text text-sm">スタッフで絞り込む</span></label>
+                        <select class="select select-bordered select-sm w-full max-w-xs" id="staffFilter" onchange="updateScheduleView()">
+                            <option value="">すべて</option>
+                            <option value="tanaka">田中 太郎</option>
+                            <option value="yamada">山田 花子</option>
+                            <option value="sato">佐藤 次郎</option>
+                            <option value="suzuki">鈴木 美咲</option>
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text text-sm">現在表示</span></label>
+                        <div class="badge badge-info" id="currentDateBadge"><i class="fas fa-calendar mr-1"></i><span id="currentDateText"></span></div>
+                    </div>
+                    <div class="form-control" id="weekDateRange" style="display: none;">
+                        <label class="label"><span class="label-text text-sm">表示期間</span></label>
+                        <div class="flex items-center gap-2">
+                            <button class="btn btn-sm btn-outline" onclick="navigateWeek(-1)"><i class="fas fa-chevron-left"></i></button>
+                            <div class="badge badge-primary" id="weekDateRangeBadge"><i class="fas fa-calendar-week mr-1"></i><span id="weekDateRangeText"></span></div>
+                            <button class="btn btn-sm btn-outline" onclick="navigateWeek(1)"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body p-0">
+                        <div class="overflow-x-auto">
+                            <table class="table table-pin-rows schedule-table">
+                                <thead id="scheduleTableHead"><tr class="bg-base-200"><th class="w-20 text-center">時間</th><th class="text-center">部屋</th></tr></thead>
+                                <tbody id="scheduleTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="reservationTooltip" class="fixed z-50 bg-white border border-gray-300 rounded-lg shadow-lg p-4 hidden max-w-sm">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-semibold text-lg" id="tooltipPatientName">患者名</h4>
+                        <button class="btn btn-primary btn-xs" onclick="editReservationFromTooltip()"><i class="fas fa-edit mr-1"></i>編集</button>
+                    </div>
+                    <div class="space-y-1 text-sm">
+                        <div><strong>時間:</strong> <span id="tooltipTime">--:--</span></div>
+                        <div><strong>メニュー:</strong> <span id="tooltipMenu">--</span></div>
+                        <div><strong>年齢・性別:</strong> <span id="tooltipAge">--</span></div>
+                        <div><strong>初診・再診:</strong> <span id="tooltipVisitType">--</span></div>
+                        <div><strong>電話番号:</strong> <span id="tooltipPhone">--</span></div>
+                        <div><strong>備考:</strong> <span id="tooltipNotes">--</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <dialog id="patientChartModal" class="modal">
+        <div class="modal-box w-11/12 max-w-4xl">
+            <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+            <h3 class="font-bold text-lg mb-4"><i class="fas fa-user-md mr-2 text-success"></i>スケジュール登録</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">開始時間</span></label><input type="datetime-local" class="input input-bordered datetime-input" id="chartStartTime" /></div>
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">終了時間</span></label><input type="datetime-local" class="input input-bordered datetime-input" id="chartEndTime" disabled /></div>
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">顧客ID/顧客名</span></label><div class="flex gap-2"><input type="text" placeholder="ID" class="input input-bordered w-24" id="chartCustomerId" /><input type="text" class="input input-bordered flex-1" id="chartCustomerName" placeholder="お客様名を入力" /><button class="btn btn-info btn-sm">詳細ページへ</button></div><button class="btn btn-success btn-sm mt-2 w-full">新規顧客登録</button></div>
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">部屋名</span></label><select class="select select-bordered menu-input" id="chartRoom"><option value="">予約枠</option><option value="room1">施術室1</option><option value="room2">施術室2</option></select></div>
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">メニュー</span></label><select class="select select-bordered menu-input" id="chartMenu"><option value="">【30分】早整体 美容</option><option value="basic30">基本整体コース（30分）</option><option value="standard60">スタンダード整体コース（60分）</option><option value="premium90">プレミアム整体コース（90分）</option><option value="fullbody120">フルボディケアコース（120分）</option></select></div>
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">オプションメニュー</span></label><select class="select select-bordered menu-input" id="chartOptionMenu"><option value="">選択してください</option><option value="head">ヘッドマッサージ</option><option value="foot">フットケア</option></select></div>
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">担当者</span></label><select class="select select-bordered menu-input" id="chartStaff"><option value="">担当者を選択</option><option value="tanaka">田中 太郎</option><option value="yamada">山田 花子</option><option value="sato">佐藤 次郎</option><option value="suzuki">鈴木 美咲</option></select></div>
+                </div>
+                <div class="space-y-4">
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">備考</span></label><textarea class="textarea textarea-bordered h-24" id="chartNotes"></textarea></div>
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">顧客メモ</span></label><textarea class="textarea textarea-bordered h-24" id="chartCustomerNotes"></textarea></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="form-control"><label class="label"><span class="label-text font-semibold">来店時間</span></label><input type="time" class="input input-bordered w-full" id="chartArrivalTime" /></div>
+                        <div class="form-control"><label class="label"><span class="label-text font-semibold">退店時間</span></label><input type="time" class="input input-bordered w-full" id="chartDepartureTime" /></div>
+                    </div>
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">ステータス</span></label><div class="flex gap-2"><label class="label cursor-pointer"><input type="radio" name="chartStatus" value="scheduled" class="radio radio-primary" checked /><span class="label-text ml-2">予約済み</span></label><label class="label cursor-pointer"><input type="radio" name="chartStatus" value="arrived" class="radio radio-success" /><span class="label-text ml-2">来店済み</span></label><label class="label cursor-pointer"><input type="radio" name="chartStatus" value="completed" class="radio radio-info" /><span class="label-text ml-2">完了</span></label></div></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="form-control"><label class="label"><span class="label-text font-semibold">インターバル（分）</span></label><input type="number" class="input input-bordered w-full" id="chartIntervalMinutes" min="0" max="120" value="0" /></div>
+                        <div class="form-control"><label class="label"><span class="label-text font-semibold">担当者</span></label><select class="select select-bordered w-full" id="chartIntervalStaff"><option value="">担当者を選択</option><option value="tanaka">田中 太郎</option><option value="yamada">山田 花子</option><option value="sato">佐藤 次郎</option><option value="suzuki">鈴木 美咲</option></select></div>
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-semibold">前倒し候補</span></label>
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="badge" id="chartEarlySuggestText">設定なし</span>
+                                <div class="join">
+                                    <input type="number" id="chartIntervalMinutes" class="input input-bordered input-xs w-16 text-center join-item" min="0" max="120" value="0" />
+                                </div>
+                                <span class="ml-1 text-xs">分</span>
+                            </div>
+                            <button class="btn btn-warning btn-sm" type="button" onclick="sendEarlyRequestFromChart()"><i class="fas fa-paper-plane mr-1"></i>前倒し依頼</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-action">
+                <form method="dialog" class="flex gap-2">
+                    <button class="btn btn-error btn-outline"><i class="fas fa-times mr-1"></i>閉じる</button>
+                    <button class="btn btn-warning" type="button" onclick="cancelSchedule()"><i class="fas fa-edit mr-1"></i>キャンセルする</button>
+                    <button class="btn btn-success" type="button" onclick="savePatientChart()"><i class="fas fa-save mr-1"></i>保存する</button>
+                </form>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="scheduleModal" class="modal">
+        <div class="modal-box w-11/12 max-w-2xl">
+            <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+            <h3 class="font-bold text-lg mb-4"><i class="fas fa-calendar-plus mr-2 text-primary"></i>スケジュール登録</h3>
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">日時</span></label><div class="flex gap-2"><input type="date" class="input input-bordered date-input" id="scheduleDate" /><input type="time" class="input input-bordered time-input" id="scheduleTime" /></div></div>
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">担当者</span></label><select class="select select-bordered menu-input" id="scheduleStaff"><option value="">担当者を選択</option><option value="tanaka">田中 太郎</option><option value="yamada">山田 花子</option><option value="sato">佐藤 次郎</option><option value="suzuki">鈴木 美咲</option><option value="equipment">機器・設備</option></select></div>
+                </div>
+                <div class="form-control"><label class="label"><span class="label-text font-semibold">お客様名</span></label><input type="text" class="input input-bordered menu-input" id="scheduleCustomerName" /></div>
+                <div class="form-control"><label class="label"><span class="label-text font-semibold">メニュー・料金</span></label><input type="text" class="input input-bordered menu-input" id="scheduleMenu" /></div>
+                <div class="form-control"><label class="label"><span class="label-text font-semibold">備考・特記事項</span></label><textarea class="textarea textarea-bordered h-24" id="scheduleNotes"></textarea></div>
+            </div>
+            <div class="modal-action">
+                <form method="dialog" class="flex gap-2">
+                    <button class="btn btn-ghost">キャンセル</button>
+                    <div id="earlySuggestWrap" class="mr-auto hidden">
+                        <div class="flex items-center gap-2">
+                            <span class="badge badge-outline" id="earlySuggestText"></span>
+                            <button class="btn btn-warning btn-sm" type="button" onclick="applyEarlySuggestion()"><i class="fas fa-forward mr-1"></i>前倒しにする</button>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" type="button" onclick="saveSchedule()"><i class="fas fa-save mr-1"></i>登録する</button>
+                </form>
+            </div>
+        </div>
+    </dialog>
+
+    <script src="assets/common.js"></script>
+    <script>
+        let currentView = 'schedule';
+        let currentDate = new Date();
+        let calendarViewType = 'day';
+        let weekStartDate = new Date();
+        let weekEndDate = new Date(); weekEndDate.setDate(weekStartDate.getDate()+6);
+        let viewTypeByMode = { day: 'all', week: 'all', month: 'all' };
+        let staffFilterByMode = { day: '', week: '', month: '' };
+
+        document.addEventListener('DOMContentLoaded', function(){
+            // 常に「日」「すべて」「本日」をデフォルト表示
+            calendarViewType = 'day';
+            const viewAll = document.querySelector('input[name="view"][value="all"]');
+            if(viewAll){ viewAll.checked = true; }
+            currentDate = new Date();
+            changeCalendarView();
+            updateDatePicker();
+            updateWeekRangePicker();
+            updateDateDisplay();
+            updateScheduleView();
+            const staffSel=document.getElementById('scheduleStaff');
+            const timeInp=document.getElementById('scheduleTime');
+            const dateInp=document.getElementById('scheduleDate');
+            if(staffSel){ staffSel.addEventListener('change', updateEarlySuggestion); }
+            if(timeInp){ timeInp.addEventListener('change', updateEarlySuggestion); }
+            if(dateInp){ dateInp.addEventListener('change', updateEarlySuggestion); }
+        });
+
+        function formatLocalDate(date){ const d=(date instanceof Date)?date:new Date(date); const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+
+        function updateDatePicker(){ const dp=document.getElementById('datePicker'); if(dp){ dp.value = formatLocalDate(currentDate); } }
+        function updateWeekRangePicker(){ const s=document.getElementById('weekStartDate'); const e=document.getElementById('weekEndDate'); if(s) s.value=formatLocalDate(weekStartDate); if(e) e.value=formatLocalDate(weekEndDate); }
+        function updateDateDisplay(){ let text=''; if(calendarViewType==='day'){ text=currentDate.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'}); } else if(calendarViewType==='week'){ const a=weekStartDate.toLocaleDateString('ja-JP',{year:'numeric',month:'numeric',day:'numeric',weekday:'short'}); const b=weekEndDate.toLocaleDateString('ja-JP',{year:'numeric',month:'numeric',day:'numeric',weekday:'short'}); text=`${a} - ${b}`; } else { text=currentDate.toLocaleDateString('ja-JP',{year:'numeric',month:'long'}); } const badge=document.getElementById('currentDateBadge'); if(badge){ badge.innerHTML = `<i class="fas fa-calendar mr-1"></i>${text}`; } }
+
+        function changeCalendarView(){ const sel=document.querySelector('input[name="calendarView"]:checked'); if(!sel) return; calendarViewType=sel.value; const dp=document.getElementById('datePicker'); const wr=document.getElementById('weekRangePicker'); if(calendarViewType==='day'){ dp.classList.remove('hidden'); wr.classList.add('hidden'); } else if(calendarViewType==='week'){ dp.classList.add('hidden'); wr.classList.remove('hidden'); } else { dp.classList.add('hidden'); wr.classList.add('hidden'); } updateDateDisplay(); updateScheduleView(); }
+        function changeSelectedDate(){ const dp=document.getElementById('datePicker'); if(dp && dp.value){ currentDate=new Date(dp.value); updateDateDisplay(); updateScheduleView(); } }
+        function changeWeekRange(){ const s=document.getElementById('weekStartDate'); const e=document.getElementById('weekEndDate'); if(s && s.value){ weekStartDate=new Date(s.value); } if(e && e.value){ weekEndDate=new Date(e.value); } updateDateDisplay(); updateScheduleView(); }
+        function navigateWeek(d){ weekStartDate.setDate(weekStartDate.getDate()+d*7); weekEndDate.setDate(weekStartDate.getDate()+6); updateWeekRangePicker(); updateDateDisplay(); if(calendarViewType==='week') updateWeekView(viewTypeByMode.week, staffFilterByMode.week); }
+        function goToToday(){ currentDate=new Date(); updateDatePicker(); updateDateDisplay(); updateScheduleView(); }
+
+        function calculateReservationPosition(reservationTime, baseTime){ const [st,et]=reservationTime.split('-'); const [sh,sm]=st.split(':').map(Number); const [eh,em]=et.split(':').map(Number); const [bh,bm]=baseTime.split(':').map(Number); const pph=120; const ppm=pph/60; const startOffset=((sh-bh)*60 + (sm-bm)); const top=Math.max(0,startOffset*ppm); const dur=((eh-sh)*60 + (em-sm)); const height=Math.max(20,dur*ppm); return {top, height}; }
+        function getEndTime(startTime, duration){ const [h,m]=startTime.split(':').map(Number); const d=new Date(); d.setHours(h, m+duration, 0, 0); return d.toTimeString().slice(0,5); }
+
+        function updateScheduleView(){ const view=document.querySelector('input[name="view"]:checked')?.value||'all'; const staff=document.getElementById('staffFilter')?.value||''; viewTypeByMode[calendarViewType]=view; staffFilterByMode[calendarViewType]=staff; const badge=document.getElementById('currentDateBadge'); const week=document.getElementById('weekDateRange'); const table=document.querySelector('table.schedule-table'); if(calendarViewType==='day'){ if(badge) badge.style.display='block'; if(week) week.style.display='none'; if(table) table.classList.remove('month-mode'); updateScheduleTable(view, staff); } else if(calendarViewType==='week'){ if(badge) badge.style.display='none'; if(week) week.style.display='block'; if(table) table.classList.remove('month-mode'); updateWeekView(view, staff); } else { if(badge) badge.style.display='block'; if(week) week.style.display='none'; if(table) table.classList.add('month-mode'); updateMonthView(view, staff); } }
+
+        function updateScheduleTable(viewType, staffFilter){ const head=document.getElementById('scheduleTableHead'); const body=document.getElementById('scheduleTableBody'); const staffData={ tanaka:{name:'田中 太郎',color:'bg-green-500'}, yamada:{name:'山田 花子',color:'bg-blue-500'}, sato:{name:'佐藤 次郎',color:'bg-purple-500'}, suzuki:{name:'鈴木 美咲',color:'bg-pink-500'} };
+            const cfg = loadBusinessSettings(); const open=cfg?.businessHours?.start||'10:00'; const close=cfg?.businessHours?.end||'19:00'; const slots = buildTimeSlots(open, close, 60);
+            const reservations={}; let h='<tr class="bg-base-200"><th class="w-20 text-center">時間</th>';
+            if(viewType==='room'){ h+='<th class="text-center">予約枠</th>'; }
+            else if(viewType==='staff'){ if(staffFilter){ h+=`<th class="text-center">${staffData[staffFilter].name}</th>`; } else { Object.values(staffData).forEach(s=> h+=`<th class=\"text-center\">${s.name}</th>`); } }
+            else { h+='<th class="text-center">予約枠</th>'; Object.values(staffData).forEach(s=> h+=`<th class=\"text-center\">${s.name}</th>`); }
+            h+='</tr>'; head.innerHTML=h; let b='';
+            slots.forEach(time=>{ b+='<tr class="border-b border-base-300">'; b+=`<td class=\"text-center font-mono text-sm bg-base-50\">${time}</td>`;
+                if(viewType==='room'){ b+=cellWithInterval('room', time); }
+                else if(viewType==='staff'){ const list = staffFilter ? [staffFilter] : Object.keys(staffData); list.forEach(id=>{ b+=cellWithInterval(id, time); }); }
+                else { b+=cellWithInterval('room', time); Object.keys(staffData).forEach(id=>{ b+=cellWithInterval(id, time); }); }
+                b+='</tr>'; }); body.innerHTML=b; try{ loadSavedSchedules(); }catch(e){}
+        }
+
+        function handleTimeCellClick(e, baseTime){ const cell=e.currentTarget; const intervalEl=cell.querySelector('.interval-block'); if(intervalEl){ const rect=cell.getBoundingClientRect(); const bottom=rect.bottom; const overlayTop=bottom-intervalEl.offsetHeight; if(e.clientY>=overlayTop){ return; } }
+            const rect=cell.getBoundingClientRect(); const y=e.clientY-rect.top; const height=rect.height; const minutes=Math.max(0,Math.min(59,Math.round((y/height)*60))); const rounded=Math.round(minutes/5)*5; const [h,m]=baseTime.split(':').map(Number); const start=new Date(); start.setHours(h, m+rounded, 0,0); const hh=String(start.getHours()).padStart(2,'0'); const mm=String(start.getMinutes()).padStart(2,'0'); const today=formatLocalDate(currentDate); openPatientChart('', today, `${hh}:${mm}`); }
+
+        function updateWeekView(viewType, staffFilter){ const head=document.getElementById('scheduleTableHead'); const body=document.getElementById('scheduleTableBody'); const start=new Date(weekStartDate); const end=new Date(weekEndDate); const daysDiff=Math.ceil((end-start)/(1000*60*60*24))+1; const daysToShow=Math.min(daysDiff,7); let h='<tr class="bg-base-200"><th class="w-20 text-center">時間</th>';
+            for(let i=0;i<daysToShow;i++){ const d=new Date(start); d.setDate(start.getDate()+i); const m=d.getMonth()+1; const day=d.getDate(); const w=d.toLocaleDateString('ja-JP',{weekday:'short'}); h+=`<th class=\"text-center\">${m}/${day} (${w})</th>`; } h+='</tr>'; head.innerHTML=h; const slots=['10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00']; let b=''; slots.forEach(time=>{ b+=`<tr class=\"border-b border-gray-200\"><td class=\"text-center font-mono text-sm bg-base-50 border-0\">${time}</td>`; for(let i=0;i<daysToShow;i++){ const d=new Date(start); d.setDate(start.getDate()+i); const dateStr=formatLocalDate(d); b+=`<td class=\"p-1 relative border-0\" style=\"height:120px;\" onclick=\"openWeekScheduleModal('${dateStr}','${time}')\"><div class=\"relative w-full h-full\"></div></td>`; } b+='</tr>'; }); body.innerHTML=b; try{ loadSavedSchedulesWeek(start,end); }catch(e){}
+        }
+
+        function updateMonthView(){ const head=document.getElementById('scheduleTableHead'); const body=document.getElementById('scheduleTableBody'); const year=currentDate.getFullYear(); const month=currentDate.getMonth(); const first=new Date(year,month,1); const start=new Date(year,month,1-first.getDay()); let h='<tr class="bg-base-200">'; ['日','月','火','水','木','金','土'].forEach(d=> h+=`<th class=\"text-center\">${d}</th>`); h+='</tr>'; head.innerHTML=h; let b=''; let cur=new Date(start); for(let w=0; w<6; w++){ b+='<tr class="border-b border-base-300">'; for(let d=0; d<7; d++){ const isCur=cur.getMonth()===month; const day=cur.getDate(); const yyyy=cur.getFullYear(); const mm=String(cur.getMonth()+1).padStart(2,'0'); const dd=String(cur.getDate()).padStart(2,'0'); const dateStr=`${yyyy}-${mm}-${dd}`; let cls='p-2 relative h-32 align-top'; if(!isCur) cls+=' text-gray-400 bg-gray-50'; b+=`<td class=\"${cls}\"><div class=\"day-number\">${day}</div><div class=\"day-content\"><div class=\"day-content\"><div class=\"h-full cursor-pointer rounded add-placeholder\" onclick=\"openMonthScheduleModal('${dateStr}')\"><span class=\"text-gray-400 text-xs\">追加</span></div></div></div></td>`; cur.setDate(cur.getDate()+1); }
+                b+='</tr>'; if(cur.getMonth()!==month && w>=4) break; }
+            body.innerHTML=b; try{ loadSavedSchedulesMonth(year, month); }catch(e){}
+        }
+
+        function openWeekScheduleModal(date, time){ openPatientChart('', date, time); }
+        function openMonthScheduleModal(date){ openPatientChart('', date, '10:00'); }
+
+        function saveSchedule(){ const date=document.getElementById('scheduleDate').value; const time=document.getElementById('scheduleTime').value; const staff=document.getElementById('scheduleStaff').value; const name=document.getElementById('scheduleCustomerName').value; const menu=document.getElementById('scheduleMenu').value; const notes=document.getElementById('scheduleNotes').value; if(!name.trim()){ alert('お客様名は必須項目です。'); return; } if(!staff){ alert('担当者を選択してください。'); return; } const duration=60; const data={date,time,staff,customerName:name,menu,notes,duration}; localStorage.setItem(`schedule_${date}_${time}`, JSON.stringify(data)); document.getElementById('scheduleModal').close(); updateScheduleView(); }
+
+        function loadSavedSchedules(){ const current=formatLocalDate(currentDate); const rows=document.querySelectorAll('#scheduleTableBody tr'); document.querySelectorAll('.event-block').forEach(n=>n.remove()); Object.keys(localStorage).forEach(key=>{ if(!key.startsWith(`schedule_${current}_`)) return; try{ const data=JSON.parse(localStorage.getItem(key)); if(!data||!data.time) return; renderEventBlock(data); }catch{} }); }
+        function renderEventBlock(data){ const [th]=data.time.split(':').map(Number); const baseRowTime=`${String(th).padStart(2,'0')}:00`; const row=Array.from(document.querySelectorAll('#scheduleTableBody tr')).find(tr=> tr.children[0] && tr.children[0].textContent.trim()===baseRowTime); if(!row) return; const view=document.querySelector('input[name="view"]:checked')?.value||'all'; const staffOrder=['tanaka','yamada','sato','suzuki']; let colIdx=1; if(view==='all'){ const idx=staffOrder.indexOf((data.staff||'').toLowerCase()); colIdx=2 + (idx>=0?idx:0); } else if(view==='staff'){ const filter=document.getElementById('staffFilter')?.value||''; colIdx = filter ? 1 : 1 + (staffOrder.indexOf((data.staff||'').toLowerCase())>=0?staffOrder.indexOf((data.staff||'').toLowerCase()):0); } else { colIdx=1; }
+            if(colIdx>=row.children.length) colIdx=row.children.length-1; const cell=row.children[colIdx]; const inner=cell.querySelector('.day-hour-cell')||cell; const [h,m]=data.time.split(':').map(Number); const duration=parseInt(data.duration||'60',10); const [bh,bm]=(row.children[0].textContent.trim()).split(':').map(Number); const startOffset=(h-bh)*60 + (m-bm); const px=120/60; const top=Math.max(0,startOffset*px); const height=Math.max(24,(startOffset+duration)*px - top); const staffClass=`staff-${data.staff||'tanaka'}`; const div=document.createElement('div'); div.className=`event-block ${staffClass}`; div.style.top=`${top}px`; div.style.height=`${height}px`; div.dataset.name=data.customerName||''; const endTime=getEndTime(data.time, duration); div.dataset.time=`${data.time} - ${endTime}`; div.dataset.menu=data.menu||''; div.onmouseover=(e)=>showReservationTooltip(div,e); div.onmouseout=()=>hideReservationTooltip(); div.addEventListener('click',(e)=>{ e.stopPropagation(); openPatientChart(data.customerName||'', data.date, data.time); }); div.innerHTML=`<div class="text-sm font-semibold mb-1">${data.customerName||''}</div><div class="text-xs mb-1">${data.time} - ${endTime}</div><div class="text-xs mb-1">${data.menu||''}</div>${data.notes?`<div class=\"text-xs opacity-90\">${data.notes}</div>`:''}`; inner.appendChild(div);
+            const cfg=loadBusinessSettings(); if(cfg?.useIntervals && data.interval && data.interval.minutes>0){ const overlay=document.createElement('div'); overlay.className='interval-block'; const hPx=Math.min(120, Math.max(2, Math.round((data.interval.minutes||0)*(120/60)))); overlay.style.height=hPx+'px'; inner.appendChild(overlay); }
+        }
+
+        function loadBusinessSettings(){ try{ const raw=localStorage.getItem('businessSettings'); if(!raw) return null; return JSON.parse(raw); }catch{return null} }
+        function buildTimeSlots(start, end, step){ const res=[]; const [sh,sm]=start.split(':').map(Number); const [eh,em]=end.split(':').map(Number); let d=new Date(); d.setHours(sh,sm,0,0); const limit=new Date(); limit.setHours(eh,em,0,0); while(d<=limit){ res.push(d.toTimeString().slice(0,5)); d.setMinutes(d.getMinutes()+step); } return res; }
+        function getIntervalFor(target){ const cfg=loadBusinessSettings(); if(!(cfg?.useIntervals)) return 0; // 設定で使用OFFなら0
+            // 旧ロジック互換: スタッフ別の既定インターバルがあれば利用、なければ0
+            const o=(cfg?.staffOverrides||[]).find(x=> (x.id||'').toLowerCase()===String(target).toLowerCase()); return parseInt((o?.interval)||0,10) || 0; }
+        function cellWithInterval(target, baseTime){ const interval=getIntervalFor(target); const onclick=`onclick=\"handleTimeCellClick(event,'${baseTime}')\"`; let html=`<td class=\"p-2 relative day-hour-cell\" ${onclick}><div class=\"time-cell\"></div>`; if(interval>0){ const px=120/60; const h=Math.max(2, Math.min(120, Math.round(interval*px))); html+=`<div class=\"interval-block\" style=\"height:${h}px;\"></div>`; } html+='</td>'; return html; }
+        function getEarlyConfigForStaff(staff){ const cfg=loadBusinessSettings(); if(!cfg) return {enabled:false, minutes:20}; const global={enabled:!!cfg.enableEarlyBooking, minutes:parseInt(cfg.earlyBookingMinutes||20,10)}; if(!staff){ return global; } const list=cfg.staffOverrides||[]; const o=list.find(x=> (x.id||'').toLowerCase()===String(staff).toLowerCase()); if(!o){ return global; } return { enabled: o.earlyEnabled ?? global.enabled, minutes: parseInt(o.earlyMinutes ?? global.minutes,10) } }
+        function clampToOpenHours(dateStr, timeStr){ const cfg=loadBusinessSettings(); const open=(cfg?.businessHours?.start)||'10:00'; const [oh,om]=open.split(':').map(Number); const d=new Date(dateStr+'T'+timeStr+':00'); const min=new Date(dateStr+'T'+open+':00'); if(d<min) return open; return timeStr; }
+        function updateEarlySuggestion(){ const wrap=document.getElementById('earlySuggestWrap'); const text=document.getElementById('earlySuggestText'); if(!wrap||!text) return; const date=document.getElementById('scheduleDate').value; const time=document.getElementById('scheduleTime').value; const staff=(document.getElementById('scheduleStaff').value||'').toLowerCase(); const cfg=getEarlyConfigForStaff(staff); if(!cfg.enabled||!date||!time){ wrap.classList.add('hidden'); return; } const [h,m]=time.split(':').map(Number); const t=new Date(date+'T'+time+':00'); t.setMinutes(t.getMinutes()-cfg.minutes); const hh=String(t.getHours()).padStart(2,'0'); const mm=String(t.getMinutes()).padStart(2,'0'); const cand=clampToOpenHours(date, `${hh}:${mm}`); text.textContent=`${cfg.minutes}分前倒し候補: ${cand}`; wrap.dataset.cand=cand; wrap.classList.remove('hidden'); }
+        function applyEarlySuggestion(){ const wrap=document.getElementById('earlySuggestWrap'); const cand=wrap?.dataset?.cand; if(!cand) return; document.getElementById('scheduleTime').value=cand; updateEarlySuggestion(); }
+
+        function loadSavedSchedulesWeek(startOfWeek, endOfWeek){ const body=document.getElementById('scheduleTableBody'); if(!body) return; const rows=Array.from(body.querySelectorAll('tr')); const map={}; const days=Math.ceil((endOfWeek-startOfWeek)/(1000*60*60*24))+1; const show=Math.min(days,7); for(let i=0;i<show;i++){ const d=new Date(startOfWeek); d.setDate(startOfWeek.getDate()+i); map[formatLocalDate(d)]=i; } const getRow=(base)=> rows.find(tr=> tr.children[0] && tr.children[0].textContent.trim()===base);
+            Object.keys(localStorage).forEach(key=>{ if(!key.startsWith('schedule_')) return; try{ const data=JSON.parse(localStorage.getItem(key)); if(!data||!data.date||!data.time) return; if(!(data.date in map)) return; const base=`${data.time.slice(0,2)}:00`; const row=getRow(base); if(!row) return; const col=1+map[data.date]; if(col>=row.children.length) return; const cell=row.children[col]; const container=cell.querySelector('.relative.w-full.h-full')||cell; const duration=parseInt(data.duration||'60',10); const end=getEndTime(data.time, duration); const pos=calculateReservationPosition(`${data.time}-${end}`, base); const staffClass=`staff-${(data.staff||'tanaka').toLowerCase()}`; const div=document.createElement('div'); div.className=`${staffClass} schedule-card text-white rounded-lg shadow-sm hover:shadow-lg transition-shadow cursor-pointer absolute`; div.style.top=`${pos.top}px`; div.style.height=`${pos.height}px`; div.style.width='calc(100% - 8px)'; div.style.zIndex='11'; div.dataset.name=data.customerName||''; div.dataset.time=`${data.time} - ${end}`; div.dataset.menu=data.menu||''; div.innerHTML=`<i class=\"fas fa-edit edit-icon text-xs\"></i><div class=\"text-sm font-semibold mb-1\">${data.customerName||''}</div><div class=\"text-xs mb-1\">${data.time} - ${end}</div>${data.menu?`<div class=\"text-xs mb-1\">${data.menu}</div>`:''}${data.notes?`<div class=\"text-xs opacity-90\">${data.notes}</div>`:''}`; div.addEventListener('mouseover',(e)=>showReservationTooltip(div,e)); div.addEventListener('mouseout',()=>hideReservationTooltip()); div.addEventListener('click',(e)=>{ e.stopPropagation(); openPatientChart(data.customerName||'', data.date, data.time); }); container.appendChild(div); }catch{} }); }
+
+        function loadSavedSchedulesMonth(year, month){ const body=document.getElementById('scheduleTableBody'); if(!body) return; const first=new Date(year,month,1); const start=new Date(first); start.setDate(first.getDate()-first.getDay()); const getCell=(w,d)=>{ const row=body.rows[w]; return row?row.cells[d]:null; }; const pos={}; let cur=new Date(start); for(let w=0; w<body.rows.length; w++){ for(let d=0; d<7; d++){ pos[formatLocalDate(cur)]={w,d}; cur.setDate(cur.getDate()+1);} }
+            const colorMap={ tanaka:'bg-green-500', yamada:'bg-blue-500', sato:'bg-purple-500', suzuki:'bg-pink-500', equipment:'bg-gray-500' };
+            const inMonth=(dateStr)=>{ const [yy,mm]=dateStr.split('-'); return Number(yy)===year && Number(mm)===(month+1); };
+            Object.keys(localStorage).forEach(key=>{ if(!key.startsWith('schedule_')) return; try{ const data=JSON.parse(localStorage.getItem(key)); if(!data||!data.date||!data.time) return; if(!inMonth(data.date)) return; const p=pos[data.date]; if(!p) return; const cell=getCell(p.w,p.d); if(!cell) return; const content=cell.querySelector('.day-content')||cell; const ph=content.querySelector('.add-placeholder'); if(ph) ph.remove(); const wrap=content.querySelector('.space-y-1')||(function(){ const s=document.createElement('div'); s.className='space-y-1'; content.appendChild(s); return s; })(); const color=colorMap[(data.staff||'tanaka').toLowerCase()]||'bg-green-500'; const item=document.createElement('div'); item.className=`${color} text-white text-xs p-1 rounded cursor-pointer hover:shadow-lg transition-shadow`; item.innerHTML=`<div class=\"font-semibold\">${data.customerName||''}</div><div class=\"opacity-90\">${data.time} ${data.menu||''}</div>`; item.addEventListener('click',(e)=>{ e.stopPropagation(); openPatientChart(data.customerName||'', data.date, data.time); }); wrap.appendChild(item); }catch{} }); }
+
+        let currentTooltipData={};
+        function showReservationTooltip(el, ev){ const t=document.getElementById('reservationTooltip'); const r=el.getBoundingClientRect(); const name=el.dataset.name || el.querySelector('.font-semibold')?.textContent || ''; const time=el.dataset.time || ''; const menu=el.dataset.menu || ''; document.getElementById('tooltipPatientName').textContent=name||'予約'; document.getElementById('tooltipTime').textContent=time||'--:--'; document.getElementById('tooltipMenu').textContent=menu||''; document.getElementById('tooltipAge').textContent=''; document.getElementById('tooltipVisitType').textContent=''; document.getElementById('tooltipPhone').textContent=''; document.getElementById('tooltipNotes').textContent=''; currentTooltipData={name,time,menu}; t.style.left=(r.right+10)+'px'; t.style.top=r.top+'px'; t.classList.remove('hidden'); }
+        function hideReservationTooltip(){ document.getElementById('reservationTooltip').classList.add('hidden'); }
+        function editReservationFromTooltip(){ hideReservationTooltip(); openPatientChart(currentTooltipData.name, formatLocalDate(currentDate), (currentTooltipData.time||'').slice(0,5)); }
+
+        function openPatientChart(name, date, time){ const start=date+'T'+time; document.getElementById('chartStartTime').value=start; const startDate=new Date(start); let duration=60; const menuSel=document.getElementById('chartMenu'); const apply=()=>{ const end=new Date(startDate); end.setMinutes(end.getMinutes()+duration); document.getElementById('chartEndTime').value=end.toISOString().slice(0,16); }; apply(); if(menuSel && !menuSel._bind){ menuSel.addEventListener('change',()=>{ const v=menuSel.value; if(v==='basic30') duration=30; else if(v==='standard60') duration=60; else if(v==='premium90') duration=90; else if(v==='fullbody120') duration=120; else duration=60; apply(); }); menuSel._bind=true; } const input=document.getElementById('chartCustomerName'); if(input) input.value=name||''; document.getElementById('chartCustomerId').value=''; document.getElementById('chartNotes').value=''; document.getElementById('chartCustomerNotes').value=''; document.getElementById('patientChartModal').showModal(); }
+        function savePatientChart(){ const startStr=document.getElementById('chartStartTime').value; const start=new Date(startStr); const menuSel=document.getElementById('chartMenu'); const menuText=menuSel?.options[menuSel.selectedIndex]?.textContent||''; const val=menuSel?.value||''; let duration=60; if(val==='basic30') duration=30; else if(val==='standard60') duration=60; else if(val==='premium90') duration=90; else if(val==='fullbody120') duration=120; const end=new Date(start); end.setMinutes(end.getMinutes()+duration); document.getElementById('chartEndTime').value=end.toISOString().slice(0,16); const name=(document.getElementById('chartCustomerName')?.value||'').trim(); const option=document.getElementById('chartOptionMenu'); const optionText=option?.options[option.selectedIndex]?.textContent||''; const staff=(document.getElementById('chartStaff').value||'').toLowerCase(); const date=startStr.slice(0,10); const time=startStr.slice(11,16); const intervalMin=parseInt(document.getElementById('chartIntervalMinutes').value||'0',10); const intervalStaff=(document.getElementById('chartIntervalStaff').value||staff||'').toLowerCase(); const data={ date, time, staff, customerName:name, menu: option && option.value ? `${menuText} / ${optionText}` : menuText, notes: document.getElementById('chartNotes').value || document.getElementById('chartCustomerNotes').value || '', duration, interval:{ minutes: intervalMin, staff: intervalStaff } }; localStorage.setItem(`schedule_${date}_${time}`, JSON.stringify(data)); document.getElementById('patientChartModal').close(); updateScheduleView(); }
+        function sendEarlyRequestFromChart(){ const startStr=document.getElementById('chartStartTime').value; if(!startStr) return; const date=startStr.slice(0,10); const time=startStr.slice(11,16); const staff=(document.getElementById('chartStaff').value||'').toLowerCase(); const cfg=getEarlyConfigForStaff(staff); if(!cfg.enabled){ alert('前倒し提案は設定で無効です。'); return; } const t=new Date(startStr); t.setMinutes(t.getMinutes()-cfg.minutes); const cand=`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`; const id=`early_${date}_${time}`; const payload={ id, date, time, staff, candidate:cand, status:'pending' }; try{ localStorage.setItem(id, JSON.stringify(payload)); }catch{} alert('前倒し依頼を送信しました。お客様の承認待ちです。'); }
+        function cancelSchedule(){ const start=document.getElementById('chartStartTime').value; if(start){ try{ const [date,t]=start.split('T'); const time=t?.slice(0,5); if(date && time){ localStorage.removeItem(`schedule_${date}_${time}`); } }catch{} } document.getElementById('patientChartModal').close(); updateScheduleView(); }
+    </script>
+</body>
+</html>
+
+
+

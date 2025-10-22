@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>問診票詳細</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.20/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .menu li > a.menu-active { background-color: rgb(59 130 246 / 0.1) !important; color: rgb(59 130 246) !important; border-right: 2px solid rgb(59 130 246); font-weight: 600; }
+        .menu li > a:hover:not(.menu-active) { background-color: rgb(0 0 0 / 0.05); }
+        .symptoms-input input[type="checkbox"]{ display:none; }
+        .symptoms-input .img-center{ position:relative; }
+        .symptoms-input .marker{ position:absolute; width:14px; height:14px; border-radius:50%; background:rgba(34,197,94,0.95); border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,0.25); transform:translate(-50%,-50%); cursor:pointer; }
+        #questionnaireDetailContent .pain-scale .btn { min-width: 40px; min-height: 40px; padding: 0; }
+        #questionnaireDetailContent .pain-scale { gap: 8px; }
+    </style>
+</head>
+<body class="bg-base-200 min-h-screen">
+    <div class="drawer lg:drawer-open">
+        <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-side">
+            <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
+            <aside class="min-h-full w-64 bg-base-100 shadow-lg relative">
+                <div id="sidebar-slot"></div>
+            </aside>
+        </div>
+        <div class="drawer-content">
+            <div class="navbar bg-base-100 shadow-sm lg:hidden">
+                <div class="navbar-start">
+                    <label for="drawer-toggle" class="btn btn-square btn-ghost">
+                        <i class="fas fa-bars text-xl"></i>
+                    </label>
+                </div>
+                <div class="navbar-center">
+                    <span class="text-lg font-semibold">問診票詳細</span>
+                </div>
+            </div>
+
+            <div class="p-4 lg:p-6" id="questionnaireDetailContent">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <a class="btn btn-ghost btn-sm" href="questionnaires.html"><i class="fas fa-arrow-left mr-1"></i> 戻る</a>
+                        <h1 class="text-2xl font-bold"><span id="qdTitle">問診票詳細</span></h1>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="space-y-3">
+                                <div class="form-control"><label class="label"><span class="label-text">名前</span></label><div class="grid grid-cols-2 gap-2"><input id="qd_lastName" class="input input-bordered" placeholder="姓" /><input id="qd_firstName" class="input input-bordered" placeholder="名" /></div></div>
+                                <div class="form-control"><label class="label"><span class="label-text">名前(ふりがな)</span></label><div class="grid grid-cols-2 gap-2"><input id="qd_kanaLast" class="input input-bordered" placeholder="かな姓" /><input id="qd_kanaFirst" class="input input-bordered" placeholder="かな名" /></div></div>
+                                <div class="form-control"><label class="label"><span class="label-text">性別</span></label><div class="flex items-center gap-4"><label class="label cursor-pointer"><input type="radio" name="qd_gender" value="male" class="radio" /><span class="ml-2">男性</span></label><label class="label cursor-pointer"><input type="radio" name="qd_gender" value="female" class="radio" /><span class="ml-2">女性</span></label><label class="label cursor-pointer"><input type="radio" name="qd_gender" value="noanswer" class="radio" /><span class="ml-2">回答しない</span></label><label class="label cursor-pointer"><input type="radio" name="qd_gender" value="other" class="radio" /><span class="ml-2">その他</span></label></div></div>
+                                <div class="form-control"><label class="label"><span class="label-text">メールアドレス</span></label><input id="qd_email" class="input input-bordered" placeholder="mail@example.com" /></div>
+                                <div class="form-control"><label class="label"><span class="label-text">携帯電話番号</span></label><input id="qd_phone" class="input input-bordered" placeholder="012-3456-7890" /></div>
+                                <div class="form-control"><label class="label"><span class="label-text">生年月日</span></label><div class="grid grid-cols-3 gap-2"><select id="qd_birthY" class="select select-bordered"></select><select id="qd_birthM" class="select select-bordered"></select><select id="qd_birthD" class="select select-bordered"></select></div></div>
+                                <div class="form-control"><label class="label"><span class="label-text">郵便番号（ハイフンなし）</span></label><div class="flex gap-2"><input id="qd_zip" class="input input-bordered flex-1" placeholder="1050001" /><button class="btn btn-outline" onclick="event.preventDefault(); alert('住所検索はダミーです');">住所検索</button></div></div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div class="form-control"><label class="label mb-2"><span class="label-text">現在の症状を選択してください（複数選択可）</span></label><div class="grid grid-cols-2 gap-2 text-sm"><label class="flex items-center"><input type="checkbox" name="qd_severity" value="sukoshi" class="checkbox mr-2" />スキマに痛い</label><label class="flex items-center"><input type="checkbox" name="qd_severity" value="ugokasu" class="checkbox mr-2" />動かすと痛い</label><label class="flex items-center"><input type="checkbox" name="qd_severity" value="sawaru" class="checkbox mr-2" />触ると痛い</label><label class="flex items-center"><input type="checkbox" name="qd_severity" value="nemurenai" class="checkbox mr-2" />眠れない</label><label class="flex items-center"><input type="checkbox" name="qd_severity" value="omodarui" class="checkbox mr-2" />重だるい</label><label class="flex items-center"><input type="checkbox" name="qd_severity" value="sonota" class="checkbox mr-2" />その他</label></div></div>
+                                <div class="form-control">
+                                    <label class="label"><span class="label-text">症状の出ている箇所をタッチしてください</span></label>
+                                    <div id="qdBodyMapInline" class="symptoms-input mt-3">
+                                        <div>
+                                            <div class="data body-position">
+                                                <div class="img-center" id="qdClickableArea" style="width:345px;height:345px;position:relative;">
+                                                    <img class="clickable" style="position:absolute;" src="https://carecle.com/assets/questionnaires/position1-bcc9bb91059d22df934293e7b6cbe0312f243195dfa1a66d50ddf6abd7761a2e.png" alt="Position1">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-xs text-base-content/60 mt-1">クリックで追加、もう一度クリックで削除できます</div>
+                                </div>
+                                <div class="form-control mt-4">
+                                    <label class="label"><span class="label-text">痛みの強さを選択して下さい。（1が痛みなし、10が痛みがとても強い）</span></label>
+                                    <div class="flex flex-wrap pain-scale"><div class="join">
+                                        <button class="btn join-item" type="button" onclick="setPainLevel(1)">1</button>
+                                        <button class="btn join-item" type="button" onclick="setPainLevel(2)">2</button>
+                                        <button class="btn join-item" type="button" onclick="setPainLevel(3)">3</button>
+                                        <button class="btn join-item" type="button" onclick="setPainLevel(4)">4</button>
+                                        <button class="btn join-item" type="button" onclick="setPainLevel(5)">5</button>
+                                        <button class="btn join-item" type="button" onclick="setPainLevel(6)">6</button>
+                                        <button class="btn join-item" type="button" onclick="setPainLevel(7)">7</button>
+                                        <button class="btn join-item" type="button" onclick="setPainLevel(8)">8</button>
+                                        <button class="btn join-item" type="button" onclick="setPainLevel(9)">9</button>
+                                        <button class="btn join-item" type="button" onclick="setPainLevel(10)">10</button>
+                                    </div></div>
+                                    <input type="hidden" id="qd_pain" value="" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="divider"></div>
+                        <div class="space-y-6">
+                            <div class="form-control"><label class="label"><span class="label-text">症状が出始めた時期を選択してください</span></label><div class="flex flex-wrap gap-3 text-sm"><label class="label cursor-pointer"><input type="radio" name="qd_onset" value="3d" class="radio" /><span class="ml-2">3日以内</span></label><label class="label cursor-pointer"><input type="radio" name="qd_onset" value="1m" class="radio" /><span class="ml-2">1ヶ月以内</span></label><label class="label cursor-pointer"><input type="radio" name="qd_onset" value="3m" class="radio" /><span class="ml-2">3ヶ月以内</span></label><label class="label cursor-pointer"><input type="radio" name="qd_onset" value="over3m" class="radio" /><span class="ml-2">3ヶ月以上前から</span></label></div></div>
+                            <div class="form-control"><label class="label"><span class="label-text">症状が始めたきっかけを選択してください</span></label><div class="flex flex-wrap gap-3 text-sm mb-2"><label class="label cursor-pointer"><input type="radio" name="qd_trigger" value="butuketa" class="radio" /><span class="ml-2">ぶつけた</span></label><label class="label cursor-pointer"><input type="radio" name="qd_trigger" value="neta" class="radio" /><span class="ml-2">寝ぼけた</span></label><label class="label cursor-pointer"><input type="radio" name="qd_trigger" value="hineri" class="radio" /><span class="ml-2">捻った</span></label><label class="label cursor-pointer"><input type="radio" name="qd_trigger" value="mota" class="radio" /><span class="ml-2">荷を持った</span></label><label class="label cursor-pointer"><input type="radio" name="qd_trigger" value="oshita" class="radio" /><span class="ml-2">挟んだ</span></label><label class="label cursor-pointer"><input type="radio" name="qd_trigger" value="tennda" class="radio" /><span class="ml-2">転んだ</span></label><label class="label cursor-pointer"><input type="radio" name="qd_trigger" value="wakaranai" class="radio" /><span class="ml-2">わからない</span></label><label class="label cursor-pointer"><input type="radio" name="qd_trigger" value="other" class="radio" /><span class="ml-2">その他（記入）</span></label></div><textarea id="qd_trigger_note" class="textarea textarea-bordered" placeholder="具体的な内容をご記入ください"></textarea></div>
+                            <div class="form-control"><label class="label"><span class="label-text">現在、他の医療機関に通院していますか？</span></label><div class="flex gap-4 text-sm"><label class="label cursor-pointer"><input type="radio" name="qd_hospital" value="yes" class="radio" /><span class="ml-2">はい</span></label><label class="label cursor-pointer"><input type="radio" name="qd_hospital" value="no" class="radio" /><span class="ml-2">いいえ</span></label></div></div>
+                            <div class="form-control"><label class="label"><span class="label-text">今までに骨折・手術などの病気やケガをされたことがありますか？</span></label><div class="flex gap-4 text-sm mb-2"><label class="label cursor-pointer"><input type="radio" name="qd_history" value="yes" class="radio" /><span class="ml-2">はい</span></label><label class="label cursor-pointer"><input type="radio" name="qd_history" value="no" class="radio" /><span class="ml-2">いいえ</span></label></div><textarea id="qd_history_note" class="textarea textarea-bordered" placeholder="具体的な内容をご記入ください"></textarea></div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="form-control"><label class="label"><span class="label-text">今までに接骨院、整骨院、鍼灸院等に通院されたことがありますか？</span></label><div class="flex gap-4 text-sm"><label class="label cursor-pointer"><input type="radio" name="qd_pastclinic" value="yes" class="radio" /><span class="ml-2">はい</span></label><label class="label cursor-pointer"><input type="radio" name="qd_pastclinic" value="no" class="radio" /><span class="ml-2">いいえ</span></label></div></div>
+                                <div class="form-control"><label class="label"><span class="label-text">血圧は正常ですか？</span></label><div class="flex gap-4 text-sm"><label class="label cursor-pointer"><input type="radio" name="qd_bp" value="yes" class="radio" /><span class="ml-2">はい</span></label><label class="label cursor-pointer"><input type="radio" name="qd_bp" value="no" class="radio" /><span class="ml-2">いいえ</span></label></div></div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="form-control"><label class="label"><span class="label-text">身体にペースメーカーや金属類がついていますか？</span></label><div class="flex gap-4 text-sm"><label class="label cursor-pointer"><input type="radio" name="qd_pacemaker" value="yes" class="radio" /><span class="ml-2">はい</span></label><label class="label cursor-pointer"><input type="radio" name="qd_pacemaker" value="no" class="radio" /><span class="ml-2">いいえ</span></label></div></div>
+                                <div class="form-control"><label class="label"><span class="label-text">低周波療法は苦手ですか？</span></label><div class="flex gap-4 text-sm"><label class="label cursor-pointer"><input type="radio" name="qd_lowfreq" value="yes" class="radio" /><span class="ml-2">はい</span></label><label class="label cursor-pointer"><input type="radio" name="qd_lowfreq" value="no" class="radio" /><span class="ml-2">いいえ</span></label></div></div>
+                            </div>
+                            <div class="form-control"><label class="label"><span class="label-text">アレルギー・疾患等はありますか？</span></label><div class="flex gap-4 text-sm mb-2"><label class="label cursor-pointer"><input type="radio" name="qd_allergy" value="yes" class="radio" /><span class="ml-2">はい</span></label><label class="label cursor-pointer"><input type="radio" name="qd_allergy" value="no" class="radio" /><span class="ml-2">いいえ</span></label></div><textarea id="qd_allergy_note" class="textarea textarea-bordered" placeholder="施術者に伝えたいことがある場合はご記入ください"></textarea></div>
+                        </div>
+                        <div class="card-actions justify-end mt-6">
+                            <button class="btn btn-primary" onclick="saveQuestionnaireFormAndPoints()">確認ページへ進む</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/common.js"></script>
+    <script>
+        let currentQuestionnaireId=null;
+        function getQuestionnaires(){ try{ return JSON.parse(localStorage.getItem('questionnaires')||'[]'); }catch{return []} }
+        function setPainLevel(n){ const h=document.getElementById('qd_pain'); if(h){ h.value=String(n);} highlightPainButtons(n); }
+        function highlightPainButtons(n){ const buttons=document.querySelectorAll('#questionnaireDetailContent .pain-scale .btn'); buttons.forEach((b,idx)=>{ const num=idx+1; if(num===n){ b.classList.add('btn-primary'); b.classList.remove('btn-ghost'); } else { b.classList.add('btn-ghost'); b.classList.remove('btn-primary'); } }); }
+        function populateBirthSelectors(){ const ySel=document.getElementById('qd_birthY'); const mSel=document.getElementById('qd_birthM'); const dSel=document.getElementById('qd_birthD'); if(!ySel||!mSel||!dSel) return; if(ySel.options.length===0){ const now=new Date().getFullYear(); for(let y=now;y>=1900;y--){ const o=document.createElement('option'); o.value=String(y); o.textContent=String(y); ySel.appendChild(o);} } if(mSel.options.length===0){ for(let m=1;m<=12;m++){ const o=document.createElement('option'); o.value=String(m).padStart(2,'0'); o.textContent=String(m).padStart(2,'0'); mSel.appendChild(o);} } if(dSel.options.length===0){ for(let d=1;d<=31;d++){ const o=document.createElement('option'); o.value=String(d).padStart(2,'0'); o.textContent=String(d).padStart(2,'0'); dSel.appendChild(o);} } }
+        function addMarker(area,x,y){ const m=document.createElement('div'); m.className='marker'; m.style.left=x+'%'; m.style.top=y+'%'; m.dataset.x=String(x); m.dataset.y=String(y); m.title=`${Math.round(x)}%, ${Math.round(y)}%`; m.addEventListener('click', function(ev){ ev.stopPropagation(); m.remove(); }); area.appendChild(m); }
+        function removeNearbyMarker(area,x,y,r){ const ms=Array.from(area.querySelectorAll('.marker')); for(const m of ms){ const mx=parseFloat(m.dataset.x); const my=parseFloat(m.dataset.y); const dx=mx-x; const dy=my-y; const dist=Math.sqrt(dx*dx+dy*dy); if(dist<=r){ m.remove(); return true; } } return false; }
+        function setupBodyMapClick(){ const area=document.getElementById('qdClickableArea'); if(!area) return; area.onclick=function(e){ const rect=area.getBoundingClientRect(); const x=((e.clientX-rect.left)/rect.width)*100; const y=((e.clientY-rect.top)/rect.height)*100; const removed=removeNearbyMarker(area,x,y,3); if(!removed){ addMarker(area,x,y); } }
+        }
+        function saveQuestionnaireFormAndPoints(){ if(currentQuestionnaireId==null){ alert('問診票IDが不明です'); return; } const area=document.getElementById('qdClickableArea'); if(area){ const markers=Array.from(area.querySelectorAll('.marker')); const positions=markers.map(m=>({x:parseFloat(m.dataset.x), y:parseFloat(m.dataset.y)})); localStorage.setItem(`questionnaire_${currentQuestionnaireId}_points`, JSON.stringify(positions)); }
+            const data={ lastName:document.getElementById('qd_lastName')?.value||'', firstName:document.getElementById('qd_firstName')?.value||'', kanaLast:document.getElementById('qd_kanaLast')?.value||'', kanaFirst:document.getElementById('qd_kanaFirst')?.value||'', gender:(document.querySelector('input[name="qd_gender"]:checked')?.value)||'', email:document.getElementById('qd_email')?.value||'', phone:document.getElementById('qd_phone')?.value||'', birthY:document.getElementById('qd_birthY')?.value||'', birthM:document.getElementById('qd_birthM')?.value||'', birthD:document.getElementById('qd_birthD')?.value||'', zip:document.getElementById('qd_zip')?.value||'', severity:Array.from(document.querySelectorAll('input[name="qd_severity"]:checked')).map(el=>el.value), onset:(document.querySelector('input[name="qd_onset"]:checked')?.value)||'', trigger:(document.querySelector('input[name="qd_trigger"]:checked')?.value)||'', triggerNote:document.getElementById('qd_trigger_note')?.value||'', pain:document.getElementById('qd_pain')?.value||'', hospital:(document.querySelector('input[name="qd_hospital"]:checked')?.value)||'', history:(document.querySelector('input[name="qd_history"]:checked')?.value)||'', historyNote:document.getElementById('qd_history_note')?.value||'', pastclinic:(document.querySelector('input[name="qd_pastclinic"]:checked')?.value)||'', bp:(document.querySelector('input[name="qd_bp"]:checked')?.value)||'', pacemaker:(document.querySelector('input[name="qd_pacemaker"]:checked')?.value)||'', lowfreq:(document.querySelector('input[name="qd_lowfreq"]:checked')?.value)||'', allergy:(document.querySelector('input[name="qd_allergy"]:checked')?.value)||'', allergyNote:document.getElementById('qd_allergy_note')?.value||'' };
+            localStorage.setItem(`questionnaire_${currentQuestionnaireId}_form`, JSON.stringify(data)); alert('入力内容を保存しました'); }
+        function loadQuestionnaireForm(){ if(currentQuestionnaireId==null) return; let data=null; try{ data=JSON.parse(localStorage.getItem(`questionnaire_${currentQuestionnaireId}_form`)||'null'); }catch{} if(!data) return; const setVal=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v||''; }; setVal('qd_lastName', data.lastName); setVal('qd_firstName', data.firstName); setVal('qd_kanaLast', data.kanaLast); setVal('qd_kanaFirst', data.kanaFirst); if(data.gender){ const el=document.querySelector(`input[name="qd_gender"][value="${data.gender}"]`); if(el) el.checked=true; } setVal('qd_email', data.email); setVal('qd_phone', data.phone); populateBirthSelectors(); setVal('qd_birthY', data.birthY); setVal('qd_birthM', data.birthM); setVal('qd_birthD', data.birthD); setVal('qd_zip', data.zip); if(Array.isArray(data.severity)){ const set=new Set(data.severity); document.querySelectorAll('input[name="qd_severity"]').forEach(el=>{ el.checked=set.has(el.value); }); } if(data.onset){ const el=document.querySelector(`input[name="qd_onset"][value="${data.onset}"]`); if(el) el.checked=true; } if(data.trigger){ const el=document.querySelector(`input[name="qd_trigger"][value="${data.trigger}"]`); if(el) el.checked=true; } setVal('qd_trigger_note', data.triggerNote); if(data.pain){ const h=document.getElementById('qd_pain'); if(h){ h.value=data.pain; highlightPainButtons(parseInt(data.pain,10)); } } if(data.hospital){ const el=document.querySelector(`input[name=\"qd_hospital\"][value=\"${data.hospital}\"]`); if(el) el.checked=true; } if(data.history){ const el=document.querySelector(`input[name=\"qd_history\"][value=\"${data.history}\"]`); if(el) el.checked=true; } setVal('qd_history_note', data.historyNote); if(data.pastclinic){ const el=document.querySelector(`input[name=\"qd_pastclinic\"][value=\"${data.pastclinic}\"]`); if(el) el.checked=true; } if(data.bp){ const el=document.querySelector(`input[name=\"qd_bp\"][value=\"${data.bp}\"]`); if(el) el.checked=true; } if(data.pacemaker){ const el=document.querySelector(`input[name=\"qd_pacemaker\"][value=\"${data.pacemaker}\"]`); if(el) el.checked=true; } if(data.lowfreq){ const el=document.querySelector(`input[name=\"qd_lowfreq\"][value=\"${data.lowfreq}\"]`); if(el) el.checked=true; } if(data.allergy){ const el=document.querySelector(`input[name=\"qd_allergy\"][value=\"${data.allergy}\"]`); if(el) el.checked=true; } setVal('qd_allergy_note', data.allergyNote); }
+        function loadBodyPositions(){ const area=document.getElementById('qdClickableArea'); if(!area) return; area.querySelectorAll('.marker').forEach(el=>el.remove()); let positions=[]; if(currentQuestionnaireId!=null){ try{ positions=JSON.parse(localStorage.getItem(`questionnaire_${currentQuestionnaireId}_points`)||'[]'); }catch{} } positions.forEach(p=> addMarker(area,p.x,p.y)); }
+
+        function getParam(name){ const p=new URLSearchParams(location.search); return p.get(name); }
+        document.addEventListener('DOMContentLoaded', function(){ const idStr=getParam('id'); if(idStr){ currentQuestionnaireId=Number(idStr); } const list=getQuestionnaires(); const item=list.find(v=>v.id===currentQuestionnaireId); const titleEl=document.getElementById('qdTitle'); if(titleEl){ titleEl.textContent = item ? item.name : '問診票詳細'; } populateBirthSelectors(); setupBodyMapClick(); loadBodyPositions(); loadQuestionnaireForm(); });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

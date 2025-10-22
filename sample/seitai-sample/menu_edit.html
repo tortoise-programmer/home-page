@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メニュー編集</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.20/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .menu li > a.menu-active { background-color: rgb(59 130 246 / 0.1) !important; color: rgb(59 130 246) !important; border-right: 2px solid rgb(59 130 246); font-weight: 600; }
+        .menu li > a:hover:not(.menu-active) { background-color: rgb(0 0 0 / 0.05); }
+    </style>
+</head>
+<body class="bg-base-200 min-h-screen">
+    <div class="drawer lg:drawer-open">
+        <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-side">
+            <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
+            <aside class="min-h-full w-64 bg-base-100 shadow-lg relative">
+                <div id="sidebar-slot"></div>
+            </aside>
+        </div>
+        <div class="drawer-content">
+            <div class="navbar bg-base-100 shadow-sm lg:hidden">
+                <div class="navbar-start">
+                    <label for="drawer-toggle" class="btn btn-square btn-ghost"><i class="fas fa-bars text-xl"></i></label>
+                </div>
+                <div class="navbar-center">
+                    <span class="text-lg font-semibold">メニュー編集</span>
+                </div>
+            </div>
+
+            <div class="p-4 lg:p-6">
+                <div class="breadcrumbs text-sm mb-4">
+                    <ul>
+                        <li><a href="menu_management.html"><i class="fas fa-list mr-1"></i>メニュー管理</a></li>
+                        <li>メニュー編集</li>
+                    </ul>
+                </div>
+
+                <div class="flex items-center justify-between mb-4">
+                    <h1 class="text-2xl font-bold">メニュー編集</h1>
+                    <div class="space-x-2">
+                        <a href="menu_management.html" class="btn btn-ghost"><i class="fas fa-arrow-left mr-1"></i>戻る</a>
+                        <button id="btnDelete" class="btn btn-error btn-outline hidden"><i class="fas fa-trash mr-1"></i>削除</button>
+                        <button id="btnSave" class="btn btn-primary"><i class="fas fa-save mr-1"></i>保存</button>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body p-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">分類</span></label>
+                                <select id="f_type" class="select select-bordered">
+                                    <option value="menu">通常メニュー</option>
+                                    <option value="option">オプション</option>
+                                    <option value="goods">物販</option>
+                                </select>
+                            </div>
+                            <div class="form-control md:col-span-1">
+                                <label class="label"><span class="label-text">サービス名 <span class="text-error">*</span></span></label>
+                                <input id="f_name" type="text" class="input input-bordered" placeholder="例: 整体60分" />
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span id="label_minutes" class="label-text">提供時間（分）</span></label>
+                                <input id="f_minutes" type="number" class="input input-bordered" placeholder="60" min="0" />
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span id="label_price" class="label-text">料金（税込） <span class="text-error">*</span></span></label>
+                                <input id="f_price" type="number" class="input input-bordered" placeholder="6300" min="0" />
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">税率（%）</span></label>
+                                <input id="f_tax" type="number" class="input input-bordered" placeholder="10" min="0" max="100" />
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">表示/公開</span></label>
+                                <select id="f_status" class="select select-bordered">
+                                    <option value="active">公開</option>
+                                    <option value="inactive">非公開</option>
+                                </select>
+                            </div>
+                            <!-- オプション（複数選択・タグ表示） -->
+                            <div class="form-control md:col-span-2">
+                                <label class="label"><span class="label-text">オプション（複数選択）</span></label>
+                                <div id="opt_multi" class="relative">
+                                    <button type="button" id="opt_toggle" class="w-full border border-base-300 rounded px-3 py-2 min-h-12 bg-base-100 flex items-center gap-2 flex-wrap text-left">
+                                        <div id="opt_tags" class="flex flex-wrap gap-2"></div>
+                                        <span id="opt_placeholder" class="text-base-content/50">クリックして選択</span>
+                                        <i class="fas fa-chevron-down ml-auto"></i>
+                                    </button>
+                                    <div id="opt_dropdown" class="absolute z-30 mt-1 w-full bg-base-100 border border-base-300 rounded shadow max-h-56 overflow-auto hidden">
+                                        <ul id="opt_list" class="menu menu-sm w-full"></ul>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-base-content/60 mt-1">登録済みオプション（分類=オプション）から選択できます。</p>
+                            </div>
+                            <div class="form-control md:col-span-2">
+                                <label class="label"><span class="label-text">説明</span></label>
+                                <textarea id="f_desc" class="textarea textarea-bordered" placeholder="概要や注意事項"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- プラン設定 -->
+                <div class="card bg-base-100 shadow-xl mt-6">
+                    <div class="card-body p-4">
+                        <h2 class="text-lg font-semibold mb-2"><i class="fas fa-tags mr-2"></i>プラン設定</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="form-control md:col-span-2">
+                                <label class="label cursor-pointer">
+                                    <span class="label-text">このメニューにプランを設定</span>
+                                    <input id="f_plan_enabled" type="checkbox" class="toggle toggle-primary" />
+                                </label>
+                            </div>
+
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">バッジテキスト</span></label>
+                                <input id="f_plan_badge_text" type="text" class="input input-bordered" placeholder="例: 早割 / 当日割" />
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">バッジ色</span></label>
+                                <select id="f_plan_badge_color" class="select select-bordered">
+                                    <option value="badge-primary">primary</option>
+                                    <option value="badge-secondary">secondary</option>
+                                    <option value="badge-accent">accent</option>
+                                    <option value="badge-neutral">neutral</option>
+                                    <option value="badge-info">info</option>
+                                    <option value="badge-success">success</option>
+                                    <option value="badge-warning">warning</option>
+                                    <option value="badge-error">error</option>
+                                </select>
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">アイコン（Font Awesomeクラス）</span></label>
+                                <input id="f_plan_badge_icon" type="text" class="input input-bordered" placeholder="例: fa-solid fa-bolt" />
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">表示期間（開始）</span></label>
+                                <input id="f_plan_valid_from" type="date" class="input input-bordered" />
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">表示期間（終了）</span></label>
+                                <input id="f_plan_valid_to" type="date" class="input input-bordered" />
+                            </div>
+                            <div class="form-control md:col-span-2">
+                                <label class="label"><span class="label-text">曜日指定</span></label>
+                                <div class="flex flex-wrap gap-3">
+                                    <label class="label cursor-pointer gap-2"><input type="checkbox" class="checkbox" value="1" id="wd_1"><span class="label-text">月</span></label>
+                                    <label class="label cursor-pointer gap-2"><input type="checkbox" class="checkbox" value="2" id="wd_2"><span class="label-text">火</span></label>
+                                    <label class="label cursor-pointer gap-2"><input type="checkbox" class="checkbox" value="3" id="wd_3"><span class="label-text">水</span></label>
+                                    <label class="label cursor-pointer gap-2"><input type="checkbox" class="checkbox" value="4" id="wd_4"><span class="label-text">木</span></label>
+                                    <label class="label cursor-pointer gap-2"><input type="checkbox" class="checkbox" value="5" id="wd_5"><span class="label-text">金</span></label>
+                                    <label class="label cursor-pointer gap-2"><input type="checkbox" class="checkbox" value="6" id="wd_6"><span class="label-text">土</span></label>
+                                    <label class="label cursor-pointer gap-2"><input type="checkbox" class="checkbox" value="0" id="wd_0"><span class="label-text">日</span></label>
+                                </div>
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">時間限定（開始）</span></label>
+                                <input id="f_plan_time_from" type="time" class="input input-bordered" />
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">時間限定（終了）</span></label>
+                                <input id="f_plan_time_to" type="time" class="input input-bordered" />
+                            </div>
+                            <div class="form-control">
+                                <label class="label cursor-pointer">
+                                    <span class="label-text">当日割（本日予約のみ）</span>
+                                    <input id="f_plan_same_day" type="checkbox" class="toggle toggle-primary" />
+                                </label>
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">早割（日数）</span></label>
+                                <input id="f_plan_early_days" type="number" class="input input-bordered" min="0" placeholder="例: 7" />
+                            </div>
+                            <div class="form-control md:col-span-2">
+                                <label class="label"><span class="label-text">バッジ プレビュー</span></label>
+                                <div id="plan_badge_preview" class="space-x-2">
+                                    <span class="badge badge-primary"><i class="fa-solid fa-tag mr-1"></i><span>Sample</span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- オプション設定（分類がオプションのとき表示） -->
+                <div id="option_card" class="card bg-base-100 shadow-xl mt-6 hidden">
+                    <div class="card-body p-4">
+                        <h2 class="text-lg font-semibold mb-2"><i class="fas fa-plus-circle mr-2"></i>オプション設定</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="form-control">
+                                <label class="label cursor-pointer">
+                                    <span class="label-text">単体予約を許可</span>
+                                    <input id="opt_standalone" type="checkbox" class="toggle toggle-primary" />
+                                </label>
+                            </div>
+                            <div class="form-control">
+                                <label class="label cursor-pointer">
+                                    <span class="label-text">複数選択を許可</span>
+                                    <input id="opt_multiple" type="checkbox" class="toggle toggle-primary" />
+                                </label>
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">追加時間（分）</span></label>
+                                <input id="opt_delta_minutes" type="number" class="input input-bordered" placeholder="例: 10" min="0" />
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">追加料金（税込）</span></label>
+                                <input id="opt_delta_price" type="number" class="input input-bordered" placeholder="例: 1000" min="0" />
+                            </div>
+                            <div class="form-control md:col-span-2">
+                                <label class="label"><span class="label-text">メモ（任意）</span></label>
+                                <input id="opt_note" type="text" class="input input-bordered" placeholder="組み合わせ条件などのメモ" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/common.js"></script>
+    <script>
+        // データスキーマ: { id, type, name, minutes, price, tax, status, desc, updatedAt, plan, option, linkedOptionIds }
+        function loadMenus(){ try{ const raw=localStorage.getItem('menus'); return raw?JSON.parse(raw):[]; }catch{return []} }
+        function saveMenus(list){ try{ localStorage.setItem('menus', JSON.stringify(list)); }catch{} }
+        function upsertMenu(record){ const list=loadMenus(); const idx=list.findIndex(x=> String(x.id)===String(record.id)); if(idx>=0){ list[idx]=record; } else { list.push(record); } saveMenus(list); }
+        function deleteMenu(id){ const list=loadMenus().filter(x=> String(x.id)!==String(id)); saveMenus(list); }
+
+        function getParam(name){ const u=new URL(location.href); return u.searchParams.get(name); }
+        function generateId(list){ let max=0; list.forEach(x=>{ const n=parseInt(x.id,10)||0; if(n>max) max=n; }); return max+1; }
+
+        let currentId = null;
+
+        document.addEventListener('DOMContentLoaded', function(){
+            // 編集ID取得
+            currentId = getParam('id');
+            const list = loadMenus();
+            let rec = null;
+            if(currentId){ rec = list.find(x=> String(x.id)===String(currentId)); }
+
+            // 既存レコード反映
+            if(rec){
+                document.getElementById('f_type').value = rec.type||'menu';
+                document.getElementById('f_name').value = rec.name||'';
+                document.getElementById('f_minutes').value = rec.minutes||'';
+                document.getElementById('f_price').value = rec.price||'';
+                document.getElementById('f_tax').value = rec.tax||'';
+                document.getElementById('f_status').value = rec.status||'active';
+                document.getElementById('f_desc').value = rec.desc||'';
+                document.getElementById('btnDelete').classList.remove('hidden');
+
+                // プラン反映
+                const p = rec.plan||{};
+                document.getElementById('f_plan_enabled').checked = !!p.enabled;
+                document.getElementById('f_plan_badge_text').value = p.badgeText||'';
+                document.getElementById('f_plan_badge_color').value = p.badgeColor||'badge-primary';
+                document.getElementById('f_plan_badge_icon').value = p.badgeIcon||'';
+                document.getElementById('f_plan_valid_from').value = p.validFrom||'';
+                document.getElementById('f_plan_valid_to').value = p.validTo||'';
+                (p.weekdays||[]).forEach(v=>{ const el=document.getElementById('wd_'+String(v)); if(el) el.checked=true; });
+                document.getElementById('f_plan_time_from').value = p.timeFrom||'';
+                document.getElementById('f_plan_time_to').value = p.timeTo||'';
+                document.getElementById('f_plan_same_day').checked = !!p.sameDayOnly;
+                document.getElementById('f_plan_early_days').value = p.earlyBirdDays||'';
+                updateBadgePreview();
+
+                // オプション反映
+                const o = rec.option||{};
+                document.getElementById('opt_standalone').checked = !!o.standalone;
+                document.getElementById('opt_multiple').checked = !!o.multiple;
+                document.getElementById('opt_delta_minutes').value = o.deltaMinutes||'';
+                document.getElementById('opt_delta_price').value = o.deltaPrice||'';
+                document.getElementById('opt_note').value = o.note||'';
+                // 連携オプションのタグ反映
+                try{ const ids = (rec.linkedOptionIds||[]).map(String); renderSelectedOptionTags(ids); }catch(_e){}
+            }
+
+            document.getElementById('btnSave').addEventListener('click', onSave);
+            document.getElementById('btnDelete').addEventListener('click', onDelete);
+            bindBadgePreview();
+            bindTypeChange();
+            updateTypeUI();
+            // マルチセレクト初期化
+            initOptionMultiSelect();
+        });
+
+        function onSave(){
+            const type=document.getElementById('f_type').value;
+            const name=document.getElementById('f_name').value.trim();
+            const minutes=parseInt(document.getElementById('f_minutes').value,10)||0;
+            const price=parseInt(document.getElementById('f_price').value,10);
+            const tax=parseInt(document.getElementById('f_tax').value,10)||0;
+            const status=document.getElementById('f_status').value;
+            const desc=document.getElementById('f_desc').value||'';
+
+            const plan = collectPlan();
+            const option = collectOption(type);
+            const linkedOptionIds = getSelectedOptionIds();
+
+            if(!name){ alert('サービス名は必須です'); return; }
+            if(!(price>=0)){ alert('料金は数値で入力してください'); return; }
+
+            const list=loadMenus();
+            const now=Date.now();
+
+            if(currentId){
+                const idx=list.findIndex(x=> String(x.id)===String(currentId));
+                if(idx<0){ alert('対象データが見つかりません'); return; }
+                list[idx] = { ...list[idx], type, name, minutes, price, tax, status, desc, plan, option, linkedOptionIds, updatedAt: now };
+                saveMenus(list);
+            } else {
+                const newId = generateId(list);
+                const rec = { id:newId, type, name, minutes, price, tax, status, desc, plan, option, linkedOptionIds, updatedAt: now };
+                upsertMenu(rec);
+            }
+
+            location.href = 'menu_management.html';
+        }
+
+        function onDelete(){
+            if(!currentId) return;
+            if(!confirm('削除しますか？')) return;
+            deleteMenu(currentId);
+            location.href = 'menu_management.html';
+        }
+
+        function collectPlan(){
+            const enabled = !!document.getElementById('f_plan_enabled').checked;
+            if(!enabled){ return { enabled:false }; }
+            const badgeText = document.getElementById('f_plan_badge_text').value.trim();
+            const badgeColor = document.getElementById('f_plan_badge_color').value;
+            const badgeIcon = document.getElementById('f_plan_badge_icon').value.trim();
+            const validFrom = document.getElementById('f_plan_valid_from').value;
+            const validTo = document.getElementById('f_plan_valid_to').value;
+            const weekdays = [0,1,2,3,4,5,6].filter(v=>{ const el=document.getElementById('wd_'+String(v)); return el&&el.checked; });
+            const timeFrom = document.getElementById('f_plan_time_from').value;
+            const timeTo = document.getElementById('f_plan_time_to').value;
+            const sameDayOnly = !!document.getElementById('f_plan_same_day').checked;
+            const earlyBirdDays = parseInt(document.getElementById('f_plan_early_days').value,10)||0;
+            return { enabled, badgeText, badgeColor, badgeIcon, validFrom, validTo, weekdays, timeFrom, timeTo, sameDayOnly, earlyBirdDays };
+        }
+
+        function collectOption(type){
+            if(type !== 'option') return {};
+            const standalone = !!document.getElementById('opt_standalone').checked;
+            const multiple = !!document.getElementById('opt_multiple').checked;
+            const deltaMinutes = parseInt(document.getElementById('opt_delta_minutes').value,10)||0;
+            const deltaPrice = parseInt(document.getElementById('opt_delta_price').value,10)||0;
+            const note = document.getElementById('opt_note').value||'';
+            return { standalone, multiple, deltaMinutes, deltaPrice, note };
+        }
+
+        function bindBadgePreview(){
+            ['f_plan_badge_text','f_plan_badge_color','f_plan_badge_icon'].forEach(id=>{
+                const el = document.getElementById(id);
+                if(el){ el.addEventListener('input', updateBadgePreview); el.addEventListener('change', updateBadgePreview); }
+            });
+        }
+        function updateBadgePreview(){
+            try{
+                const text = document.getElementById('f_plan_badge_text').value||'Sample';
+                const color = document.getElementById('f_plan_badge_color').value||'badge-primary';
+                const icon = document.getElementById('f_plan_badge_icon').value||'fa-solid fa-tag';
+                const wrap = document.getElementById('plan_badge_preview');
+                if(wrap){ wrap.innerHTML = `<span class="badge ${color}"><i class="${icon} mr-1"></i><span>${text}</span></span>`; }
+            }catch(_e){}
+        }
+
+        function bindTypeChange(){
+            const s = document.getElementById('f_type');
+            if(!s) return;
+            s.addEventListener('change', updateTypeUI);
+        }
+        function updateTypeUI(){
+            try{
+                const t = document.getElementById('f_type').value;
+                const minutesLabel = document.getElementById('label_minutes');
+                const priceLabel = document.getElementById('label_price');
+                const optionCard = document.getElementById('option_card');
+                if(t==='option'){
+                    if(minutesLabel){ minutesLabel.textContent = '追加時間（分）'; }
+                    if(priceLabel){ priceLabel.innerHTML = '追加料金（税込） <span class="text-error">*</span>'; }
+                    if(optionCard){ optionCard.classList.remove('hidden'); }
+                } else {
+                    if(minutesLabel){ minutesLabel.textContent = '提供時間（分）'; }
+                    if(priceLabel){ priceLabel.innerHTML = '料金（税込） <span class="text-error">*</span>'; }
+                    if(optionCard){ optionCard.classList.add('hidden'); }
+                }
+            }catch(_e){}
+        }
+
+        // ---- オプション マルチセレクト ----
+        function initOptionMultiSelect(){
+            const toggle = document.getElementById('opt_toggle');
+            const dd = document.getElementById('opt_dropdown');
+            const list = document.getElementById('opt_list');
+            if(!toggle || !dd || !list) return;
+            // 候補をmenusから分類=optionのものだけ読み込み
+            let options = [];
+            try{
+                const menus = loadMenus();
+                options = menus.filter(x=> x && x.type==='option').map(x=>({ id:String(x.id), name:x.name||`オプション#${x.id}` }));
+            }catch(_e){}
+            list.innerHTML = '';
+            options.forEach(o=>{
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                a.textContent = o.name;
+                a.setAttribute('data-id', o.id);
+                a.addEventListener('click', ()=>{
+                    toggleOptionSelection(o.id, o.name);
+                });
+                li.appendChild(a);
+                list.appendChild(li);
+            });
+            toggle.addEventListener('click', ()=>{
+                dd.classList.toggle('hidden');
+            });
+            document.addEventListener('click', (e)=>{
+                if(!document.getElementById('opt_multi').contains(e.target)){
+                    dd.classList.add('hidden');
+                }
+            });
+            renderSelectedOptionTags(getSelectedOptionIds());
+        }
+        function getSelectedOptionIds(){
+            try{
+                const el = document.getElementById('opt_tags');
+                const ids = Array.from(el.querySelectorAll('[data-id]')).map(n=>n.getAttribute('data-id'));
+                return ids;
+            }catch(_e){ return []; }
+        }
+        function toggleOptionSelection(id, name){
+            const ids = new Set(getSelectedOptionIds());
+            if(ids.has(String(id))){ ids.delete(String(id)); }
+            else { ids.add(String(id)); }
+            renderSelectedOptionTags(Array.from(ids), new Map([[String(id), name]]));
+        }
+        function renderSelectedOptionTags(ids, nameMap){
+            const wrap = document.getElementById('opt_tags');
+            const placeholder = document.getElementById('opt_placeholder');
+            if(!wrap) return;
+            // 既存削除
+            wrap.innerHTML = '';
+            if(!ids || ids.length===0){ if(placeholder) placeholder.style.display=''; return; }
+            if(placeholder) placeholder.style.display='none';
+            // 候補名の解決用
+            let dict = {};
+            try{
+                const menus = loadMenus().filter(x=>x.type==='option');
+                menus.forEach(x=>{ dict[String(x.id)] = x.name||`オプション#${x.id}`; });
+            }catch(_e){}
+            if(nameMap){ nameMap.forEach((v,k)=>{ dict[String(k)] = v; }); }
+            ids.forEach(id=>{
+                const tag = document.createElement('span');
+                tag.className = 'badge badge-outline gap-1';
+                tag.setAttribute('data-id', String(id));
+                const text = document.createElement('span');
+                text.textContent = dict[String(id)]||`ID:${id}`;
+                const close = document.createElement('button');
+                close.type = 'button';
+                close.className = 'btn btn-ghost btn-xs';
+                close.innerHTML = '<i class="fas fa-times"></i>';
+                close.addEventListener('click', ()=>{
+                    toggleOptionSelection(String(id), dict[String(id)]||'');
+                });
+                tag.appendChild(text);
+                tag.appendChild(close);
+                wrap.appendChild(tag);
+            });
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

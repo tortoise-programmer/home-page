@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>サービス提供者</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.20/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .menu li > a.menu-active { background-color: rgb(59 130 246 / 0.1) !important; color: rgb(59 130 246) !important; border-right: 2px solid rgb(59 130 246); font-weight: 600; }
+        .menu li > a:hover:not(.menu-active) { background-color: rgb(0 0 0 / 0.05); }
+    </style>
+</head>
+<body class="bg-base-200 min-h-screen">
+    <div class="drawer lg:drawer-open">
+        <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-side">
+            <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
+            <aside class="min-h-full w-64 bg-base-100 shadow-lg relative">
+                <div id="sidebar-slot"></div>
+            </aside>
+        </div>
+        <div class="drawer-content">
+            <div class="navbar bg-base-100 shadow-sm lg:hidden">
+                <div class="navbar-start">
+                    <label for="drawer-toggle" class="btn btn-square btn-ghost">
+                        <i class="fas fa-bars text-xl"></i>
+                    </label>
+                </div>
+                <div class="navbar-center">
+                    <span class="text-lg font-semibold">サービス提供者</span>
+                </div>
+            </div>
+            <div class="p-4 lg:p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h1 class="text-2xl font-bold">サービス提供者</h1>
+                    <button class="btn btn-info btn-sm" onclick="openNewProviderModal()"><i class="fas fa-plus mr-1"></i>新規登録する</button>
+                </div>
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body p-4">
+                        <div class="flex items-center gap-2 mb-4">
+                            <input class="input input-bordered w-64" placeholder="名前" />
+                            <button class="btn btn-primary btn-sm"><i class="fas fa-search mr-1"></i>検索する</button>
+                        </div>
+                        <div class="space-y-3" id="providerList">
+                            <div class="flex items-center justify-between p-4 bg-base-200 rounded-lg">
+                                <div class="flex items-center gap-4">
+                                    <div class="avatar"><div class="w-10 h-10 rounded-full bg-base-300"></div></div>
+                                    <div class="text-sm"><div class="font-semibold">岩崎</div><div class="opacity-70">申請中</div></div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button class="btn btn-info btn-xs">詳細を表示</button>
+                                    <button class="btn btn-success btn-xs" onclick="openEditProviderModal('岩崎','staff')">編集する</button>
+                                    <button class="btn btn-error btn-xs"><i class="fas fa-trash mr-1"></i>削除する</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <dialog id="newProviderModal" class="modal">
+        <div class="modal-box w-11/12 max-w-2xl">
+            <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+            <h3 class="font-bold text-lg mb-4"><i class="fas fa-plus mr-2 text-info"></i>新規サービス提供者登録</h3>
+            <div class="space-y-4">
+                <div class="form-control"><label class="label"><span class="label-text font-semibold">タイプ</span></label><select class="select select-bordered w-full" id="providerType"><option value="">選択してください</option><option value="staff">スタッフ</option><option value="equipment">機器・設備</option></select></div>
+                <div class="form-control"><label class="label"><span class="label-text font-semibold">名前</span></label><input type="text" class="input input-bordered w-full" id="providerName" /></div>
+                <div class="form-control"><label class="label"><span class="label-text font-semibold">説明</span></label><textarea class="textarea textarea-bordered" id="providerDescription"></textarea></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">初期登録顧客数</span></label><input type="number" class="input input-bordered w-full" id="initialCustomers" value="0" /></div>
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">目標リピート率（%）</span></label><input type="number" class="input input-bordered w-full" id="targetRepeatRate" value="50" /></div>
+                </div>
+            </div>
+            <div class="modal-action"><form method="dialog" class="flex gap-2"><button class="btn btn-ghost">キャンセル</button><button class="btn btn-primary" onclick="saveNewProvider()"><i class="fas fa-save mr-1"></i>登録する</button></form></div>
+        </div>
+    </dialog>
+
+    <dialog id="editProviderModal" class="modal">
+        <div class="modal-box w-11/12 max-w-2xl">
+            <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+            <h3 class="font-bold text-lg mb-4"><i class="fas fa-edit mr-2 text-success"></i>サービス提供者編集</h3>
+            <div class="space-y-4">
+                <div class="form-control"><label class="label"><span class="label-text font-semibold">タイプ</span></label><div class="flex items-center gap-2"><div id="editProviderTypeIcon" class="w-8 h-8 rounded-full bg-base-300 flex items-center justify-center"><i class="fas fa-user text-sm"></i></div><span id="editProviderTypeText" class="text-base-content">スタッフ</span></div></div>
+                <div class="form-control"><label class="label"><span class="label-text font-semibold">名前</span></label><input type="text" class="input input-bordered w-full" id="editProviderName" /></div>
+                <div class="form-control"><label class="label"><span class="label-text font-semibold">説明</span></label><textarea class="textarea textarea-bordered" id="editProviderDescription"></textarea></div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="stat bg-base-200 rounded-lg p-3"><div class="stat-title text-xs">登録顧客数</div><div class="stat-value text-lg" id="editCustomerCount">0</div></div>
+                    <div class="stat bg-base-200 rounded-lg p-3"><div class="stat-title text-xs">今月カルテ数</div><div class="stat-value text-lg" id="editMonthlyCharts">0</div></div>
+                    <div class="stat bg-base-200 rounded-lg p-3"><div class="stat-title text-xs">新規顧客数</div><div class="stat-value text-lg" id="editNewCustomers">0</div></div>
+                    <div class="stat bg-base-200 rounded-lg p-3"><div class="stat-title text-xs">リピート率</div><div class="stat-value text-lg" id="editRepeatRate">0%</div></div>
+                </div>
+                <div class="form-control"><label class="label"><span class="label-text font-semibold">目標リピート率（%）</span></label><input type="number" class="input input-bordered w-full" id="editTargetRepeatRate" /></div>
+                <div class="form-control"><label class="label"><span class="label-text font-semibold">ステータス</span></label><select class="select select-bordered w-full" id="editProviderStatus"><option value="active">アクティブ</option><option value="inactive">非アクティブ</option><option value="maintenance">メンテナンス中</option></select></div>
+            </div>
+            <div class="modal-action"><form method="dialog" class="flex gap-2"><button class="btn btn-error btn-outline" onclick="deleteProvider()"><i class="fas fa-trash mr-1"></i>削除</button><button class="btn btn-ghost">キャンセル</button><button class="btn btn-success" onclick="saveEditProvider()"><i class="fas fa-save mr-1"></i>更新する</button></form></div>
+        </div>
+    </dialog>
+
+    <script src="assets/common.js"></script>
+    <script>
+        function openNewProviderModal(){ document.getElementById('newProviderModal').showModal(); }
+        function openEditProviderModal(name,type){ const modal=document.getElementById('editProviderModal'); const nameInput=document.getElementById('editProviderName'); const typeIcon=document.getElementById('editProviderTypeIcon'); const typeText=document.getElementById('editProviderTypeText'); nameInput.value=name; if(type==='staff'){ typeIcon.innerHTML='<i class="fas fa-user text-sm text-white"></i>'; typeIcon.className='w-8 h-8 rounded-full bg-primary flex items-center justify-center'; typeText.textContent='スタッフ'; document.getElementById('editCustomerCount').textContent='419'; document.getElementById('editMonthlyCharts').textContent='82'; document.getElementById('editNewCustomers').textContent='15'; document.getElementById('editRepeatRate').textContent='14%'; document.getElementById('editTargetRepeatRate').value='20'; } else { typeIcon.innerHTML='<i class="fas fa-dumbbell text-sm text-base-content"></i>'; typeIcon.className='w-8 h-8 rounded-full bg-base-300 flex items-center justify-center'; typeText.textContent='機器・設備'; document.getElementById('editCustomerCount').textContent='15'; document.getElementById('editMonthlyCharts').textContent='12'; document.getElementById('editNewCustomers').textContent='0'; document.getElementById('editRepeatRate').textContent='33%'; document.getElementById('editTargetRepeatRate').value='40'; }
+            modal.showModal(); }
+        function saveNewProvider(){ const type=document.getElementById('providerType').value; const name=document.getElementById('providerName').value; const description=document.getElementById('providerDescription').value; const initialCustomers=document.getElementById('initialCustomers').value; const targetRepeatRate=document.getElementById('targetRepeatRate').value; if(!type||!name){ alert('タイプと名前は必須項目です。'); return; } console.log('新規登録:',{type,name,description,initialCustomers,targetRepeatRate}); alert('サービス提供者を登録しました。'); document.getElementById('providerType').value=''; document.getElementById('providerName').value=''; document.getElementById('providerDescription').value=''; document.getElementById('initialCustomers').value='0'; document.getElementById('targetRepeatRate').value='50'; document.getElementById('newProviderModal').close(); }
+        function saveEditProvider(){ const name=document.getElementById('editProviderName').value; const description=document.getElementById('editProviderDescription').value; const targetRepeatRate=document.getElementById('editTargetRepeatRate').value; const status=document.getElementById('editProviderStatus').value; if(!name){ alert('名前は必須項目です。'); return; } console.log('更新:',{name,description,targetRepeatRate,status}); alert('サービス提供者を更新しました。'); document.getElementById('editProviderModal').close(); }
+        function deleteProvider(){ const name=document.getElementById('editProviderName').value; if(confirm(`「${name}」を削除してもよろしいですか？\nこの操作は取り消せません。`)){ console.log('削除:',name); alert('サービス提供者を削除しました。'); document.getElementById('editProviderModal').close(); } }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

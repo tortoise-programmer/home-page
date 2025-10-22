@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>希望日選択 - ウェブ予約</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.20/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        .calendar-day {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+            user-select: none;
+        }
+        .calendar-day:hover {
+            background-color: transparent;
+        }
+        .calendar-day.selected {
+            background-color: transparent !important;
+            color: #1d4ed8 !important;
+            font-weight: 700 !important;
+            box-shadow: none !important;
+            transform: none !important;
+        }
+        .calendar-day.other-month {
+            color: inherit;
+        }
+        .calendar-day.today {
+            background-color: transparent;
+            color: inherit;
+            border: none;
+        }
+        .calendar-day.available {
+            background-color: transparent;
+            color: inherit;
+            border: none;
+        }
+        .calendar-day.unavailable {
+            background-color: transparent;
+            color: inherit;
+        }
+        /* タイムライン（10:00-19:00, 1時間ごとの薄い横線） */
+        .day-hour-cell { position: relative; height: 540px; }
+        .time-cell {
+            height: 540px; width: 100%; border-radius: 6px; position: relative;
+            background-image: repeating-linear-gradient(
+                to bottom,
+                rgba(0,0,0,0.06) 0px,
+                rgba(0,0,0,0.06) 1px,
+                transparent 1px,
+                transparent calc(540px / 9)
+            );
+        }
+        .event-block { position: absolute; left: 4px; right: 4px; border-radius: 6px; color: #fff; padding: 6px; font-size: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .event-block.staff-tanaka { background: #10b981; }
+        .event-block.staff-yamada { background: #3b82f6; }
+        .event-block.staff-sato { background: #8b5cf6; }
+        .event-block.staff-suzuki { background: #ec4899; }
+        .event-block.staff-default { background: #9ca3af; }
+        .plan-disabled { opacity: 0.4; pointer-events: none; }
+        .time-labels { position: absolute; left: 6px; top: 0; bottom: 0; pointer-events: none; }
+        .time-label { position: absolute; font-size: 10px; color: rgba(0,0,0,0.6); background: rgba(255,255,255,0.7); padding: 1px 4px; border-radius: 3px; transform: translateY(-50%); }
+        /* クリックフィードバック */
+        #timelineCell { cursor: crosshair; }
+        .click-indicator { position:absolute; left:0; right:0; height:2px; background:#3b82f6; opacity:0.9; box-shadow:0 0 0 2px rgba(59,130,246,0.15); transform: translateY(-1px); border-radius: 2px; }
+        .click-badge { position:absolute; right:6px; padding:2px 6px; font-size:11px; color:#fff; background:#3b82f6; border-radius:9999px; transform: translateY(-50%); box-shadow:0 1px 2px rgba(0,0,0,0.15); }
+        .click-flash { animation: flashBg 300ms ease-out; }
+        /* 時刻バッジに矢印を内蔵 */
+        .click-badge { display: flex; align-items: center; }
+        .click-badge .badge-arrows { display: flex; flex-direction: column; margin-left: 6px; }
+        .click-badge .badge-arrows .btn { height: 18px; min-height: 18px; line-height: 1; padding: 0 6px; }
+        .click-badge .badge-arrows i { font-size: 10px; }
+        @keyframes flashBg { 0% { background-color: rgba(59,130,246,0.12); } 100% { background-color: transparent; } }
+        /* シニア向け時間チューナー */
+        .time-tuner button { min-width: 56px; }
+        
+        /* モバイル視認性強化 */
+        @media (max-width: 480px) {
+            .calendar-day { width: 48px; height: 48px; font-size: 16px; }
+            .calendar-day.selected { color: #1d4ed8 !important; font-weight: 700 !important; }
+            .time-label { font-size: 12px; }
+            .click-badge { font-size: 13px; padding: 3px 8px; }
+            .btn.touch-big { min-height: 48px; height: 48px; font-size: 16px; }
+            /* タイムラインの横幅を少し拡張 */
+            #timelineCell { margin-left: -8px; margin-right: -8px; }
+        }
+        /* モバイル時：背景ベタ塗りを抑えて見やすく */
+        @media (max-width: 480px) {
+            .calendar-day.available { background-color: transparent; border: none; color: inherit; }
+            .calendar-day.unavailable { background-color: transparent; border: none; color: inherit; opacity: 1; }
+            .calendar-grid { gap: 8px !important; }
+            /* 時間選択領域をスクロール可能にして、時間+プランを同時表示 */
+            .mobile-timeline-wrap { max-height: 48vh; overflow: auto; }
+            /* 画面横幅いっぱいに拡張 */
+            body { padding: 0 !important; }
+            .container { max-width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; padding-left: 0 !important; padding-right: 0 !important; }
+            .card { border-radius: 0; }
+            .card-body { padding-left: 12px; padding-right: 12px; }
+            .grid-full-mobile { gap: 8px !important; }
+            /* モバイル時：時間(35%) / プラン(65%) を維持して横並び */
+            .time-plan-grid { grid-template-columns: 35% 65% !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-base-200 p-4" x-data="dateSelection()">
+    <div class="container mx-auto max-w-6xl">
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h1 class="card-title text-xl font-bold text-center justify-center mb-6">希望日選択</h1>
+
+                <!-- ステップフロー -->
+                <div id="steps" class="steps steps-horizontal w-full mb-8">
+                    <div class="step step-primary">予約内容</div>
+                    <div class="step">内容確認</div>
+                </div>
+                
+                <!-- 戻るボタン -->
+                <div class="flex justify-start mb-4">
+                    <a href="04_menu_selection.html" class="btn btn-ghost btn-sm">
+                        ← 戻る
+                    </a>
+                </div>
+                                
+                <!-- サービス選択 -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-medium mb-3">サービス選択</h3>
+                    <div class="flex flex-col gap-2">
+                        <label class="flex items-center gap-3">
+                            <input type="checkbox" name="service" value="acupuncture" class="checkbox checkbox-primary cursor-pointer">
+                            <span class="text-base">鍼</span>
+                            <input type="checkbox" name="service" value="moxibustion" class="checkbox checkbox-primary cursor-pointer">
+                            <span class="text-base">灸</span>
+                            <input type="checkbox" name="service" value="seitai" class="checkbox checkbox-primary cursor-pointer">
+                            <span class="text-base">整体</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- メインコンテンツ -->
+                <div class="grid grid-cols-1 gap-8 grid-full-mobile">
+                    <!-- 左側：カレンダー＋時間・プラン横並び -->
+                    <div class="card bg-base-200 border border-base-300">
+                        <div class="card-body p-6">
+                            <details class="collapse collapse-arrow bg-base-100 border border-base-300">
+                                <summary class="collapse-title text-sm font-medium flex items-center gap-2">
+                                    <i class="fas fa-calendar-day"></i>
+                                    日付を選択
+                                    <span class="badge badge-sm ml-auto" x-text="selectedDateDisplay || '未選択'"></span>
+                                </summary>
+                                <div class="collapse-content">
+                                    <!-- カレンダーヘッダー -->
+                                    <div class="flex justify-between items-center mb-4">
+                                        <button class="btn btn-sm btn-outline touch-big" @click="previousMonth()" title="前月へ">
+                                            <i class="fas fa-chevron-left mr-1"></i>
+                                            前月
+                                        </button>
+                                        <h4 class="text-lg font-semibold" x-text="currentMonthYear"></h4>
+                                        <button class="btn btn-sm btn-outline touch-big" @click="nextMonth()" title="次月へ">
+                                            次月
+                                            <i class="fas fa-chevron-right ml-1"></i>
+                                        </button>
+                                    </div>
+                                    <!-- 曜日ヘッダー -->
+                                    <div class="grid grid-cols-7 gap-1 mb-2">
+                                        <div class="text-center text-sm font-medium text-gray-600">Mo</div>
+                                        <div class="text-center text-sm font-medium text-gray-600">Tu</div>
+                                        <div class="text-center text-sm font-medium text-gray-600">We</div>
+                                        <div class="text-center text-sm font-medium text-gray-600">Th</div>
+                                        <div class="text-center text-sm font-medium text-gray-600">Fr</div>
+                                        <div class="text-center text-sm font-medium text-gray-600">Sa</div>
+                                        <div class="text-center text-sm font-medium text-gray-600">Su</div>
+                                    </div>
+                                    <!-- カレンダーグリッド -->
+                                    <div class="grid grid-cols-7 gap-1 calendar-grid">
+                                        <template x-for="day in calendarDays" :key="day.dateStr">
+                                            <div 
+                                                class="calendar-day"
+                                                :class="getDayClass(day)"
+                                                @click="selectDateAndClose(day)"
+                                                x-text="day.date">
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </details>
+
+                            <!-- タイムライン（自由選択）＋プラン選択 横並び -->
+                            <div class="mt-6 flex gap-4 items-start time-plan-grid" style="min-width:0; flex-wrap:nowrap;">
+                                <!-- 左：時間選択 -->
+                                <div class="min-w-0 flex-1" style="max-width:350px;">
+                                    <div class="flex items-center justify-between mb-2 whitespace-nowrap gap-2"
+                                         style="flex-wrap: nowrap;">
+                                        <h4 class="text-sm font-medium">時間を選択（10:00〜19:00）</h4>
+                                    </div>
+                                    <div class="p-2 relative bg-base-100 rounded mobile-timeline-wrap" style="height:auto; max-height: 540px;" id="timelineCell" @click="handleTimelineClick($event)">
+                                        <div class="time-cell" style="height:540px;"></div>
+                                        <div id="timeLabels" class="time-labels"></div>
+                                    </div>
+                                </div>
+                                <!-- 右：プラン選択（時間の横に固定表示） -->
+                                <div class="min-w-0 flex-1">
+                                    <div class="mb-3">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <div class="text-sm text-base-content/60">サービス:</div>
+                                            <!-- プランバッジ（サービス名の前に表示） -->
+                                            <template x-if="menuPlan && menuPlan.enabled">
+                                                <span :class="'badge ' + (menuPlan.badgeColor||'badge-primary')">
+                                                    <i :class="(menuPlan.badgeIcon||'fa-solid fa-tag') + ' mr-1'"></i>
+                                                    <span x-text="menuPlan.badgeText||'プラン'"></span>
+                                                </span>
+                                            </template>
+                                            <template x-if="menuPlan && menuPlan.enabled">
+                                                <span class="badge badge-ghost badge-sm" :class="isMenuPlanApplicable()? 'badge-success' : 'badge-error'" x-text="isMenuPlanApplicable()? '適用中' : '対象外'"></span>
+                                            </template>
+                                        </div>
+                                        <div class="flex flex-wrap gap-2">
+                                            <label class="label cursor-pointer gap-2">
+                                                <input type="checkbox" class="checkbox checkbox-sm" value="acupuncture" @change="togglePlanService($event)">
+                                                <span class="label-text text-sm">鍼</span>
+                                            </label>
+                                            <label class="label cursor-pointer gap-2">
+                                                <input type="checkbox" class="checkbox checkbox-sm" value="moxibustion" @change="togglePlanService($event)">
+                                                <span class="label-text text-sm">灸</span>
+                                            </label>
+                                            <label class="label cursor-pointer gap-2">
+                                                <input type="checkbox" class="checkbox checkbox-sm" value="seitai" @change="togglePlanService($event)">
+                                                <span class="label-text text-sm">整体</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <!-- プランA 30分（アコーディオン無しカード表示） -->
+                                        <div class="bg-base-100 border border-base-300 rounded p-3">
+                                            <div class="flex items-center gap-2">
+                                                <i class="fas fa-clock"></i>
+                                                <button type="button" class="link underline" @click="openPlanDetail('A',30)">プランA（30分）</button>
+                                                <span class="badge badge-sm ml-auto" x-show="!isPlanAvailable(30)">不可</span>
+                                            </div>
+                                        </div>
+                                        <!-- プランB 60分（カード） -->
+                                        <div class="bg-base-100 border border-base-300 rounded p-3">
+                                            <div class="flex items-center gap-2">
+                                                <i class="fas fa-clock"></i>
+                                                <button type="button" class="link underline" @click="openPlanDetail('B',60)">プランB（60分）</button>
+                                                <span class="badge badge-sm ml-auto" x-show="!isPlanAvailable(60)">不可</span>
+                                            </div>
+                                        </div>
+                                        <!-- プランC 90分（カード） -->
+                                        <div class="bg-base-100 border border-base-300 rounded p-3">
+                                            <div class="flex items-center gap-2">
+                                                <i class="fas fa-clock"></i>
+                                                <button type="button" class="link underline" @click="openPlanDetail('C',90)">プランC（90分）</button>
+                                                <span class="badge badge-sm ml-auto" x-show="!isPlanAvailable(90)">不可</span>
+                                            </div>
+                                        </div>
+                                        <!-- プランD 120分（カード） -->
+                                        <div class="bg-base-100 border border-base-300 rounded p-3">
+                                            <div class="flex items-center gap-2">
+                                                <i class="fas fa-clock"></i>
+                                                <button type="button" class="link underline" @click="openPlanDetail('D',120)">プランD（120分）</button>
+                                                <span class="badge badge-sm ml-auto" x-show="!isPlanAvailable(120)">不可</span>
+                                            </div>
+                                        </div>
+                                        <!-- プランE 180分（カード） -->
+                                        <div class="bg-base-100 border border-base-300 rounded p-3">
+                                            <div class="flex items-center gap-2">
+                                                <i class="fas fa-clock"></i>
+                                                <button type="button" class="link underline" @click="openPlanDetail('E',180)">プランE（180分）</button>
+                                                <span class="badge badge-sm ml-auto" x-show="!isPlanAvailable(180)">不可</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                
+                
+                <!-- 次へボタン -->
+                <div class="text-center mt-6 space-y-3">
+                    <!-- 選択履歴 -->
+                    <div class="card bg-base-100 border border-base-300 max-w-xl mx-auto text-left" x-show="planHistory && planHistory.length">
+                        <div class="card-body p-3">
+                            <div class="flex items-center gap-2 mb-2 text-sm font-medium">
+                                <i class="fas fa-clock-rotate-left"></i>
+                                過去の選択プラン
+                            </div>
+                            <ul class="space-y-2 max-h-40 overflow-auto">
+                                <template x-for="(h, i) in planHistory" :key="i">
+                                    <li class="flex items-center gap-2 text-sm">
+                                        <button class="btn btn-xs btn-ghost" @click="reapplyHistory(h)">
+                                            <i class="fas fa-rotate-left mr-1"></i>適用
+                                        </button>
+                                        <span class="text-base-content/70" x-text="(h.date||'') + (h.time? ' ' + h.time: '')"></span>
+                                        <span class="mx-1">/</span>
+                                        <span x-text="(function(p){ const m={planA:'A',planB:'B',planC:'C',planD:'D',planE:'E'}; return 'プラン' + (m[p]||'?'); })(h.plan)"></span>
+                                        <span class="mx-1">/</span>
+                                        <span x-text="(h.minutes||'') + '分'"></span>
+                                        <template x-if="h.badge && h.badge.text">
+                                            <span :class="'badge badge-xs ' + (h.badge.color||'badge-primary')">
+                                                <i :class="(h.badge.icon||'fa-solid fa-tag') + ' mr-1'"></i>
+                                                <span x-text="h.badge.text"></span>
+                                            </span>
+                                        </template>
+                                    </li>
+                                </template>
+                            </ul>
+                        </div>
+                    </div>
+                    <div>
+                        <button 
+                            class="btn btn-primary touch-big"
+                            :disabled="!selectedDate || !selectedPlan || !selectedService || !selectedTime"
+                            @click="proceedToNext()">
+                            次へ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function dateSelection() {
+            return {
+                currentDate: new Date(),
+                selectedDate: null,
+                selectedPlan: null,
+                selectedService: null,
+                selectedServiceForPlan: '',
+                selectedTime: '',
+                availableMinutes: null,
+                menuId: (function(){ try{ return new URLSearchParams(location.search).get('menu')||''; }catch(_e){ return ''; } })(),
+                menuPlan: null,
+                planHistory: [],
+                        confirmPlan(plan, minutes){
+                            this.selectedPlan = plan;
+                            try{
+                                sessionStorage.setItem('selectedDate', this.selectedDate?.dateStr||'');
+                                sessionStorage.setItem('selectedTime', this.selectedTime||'');
+                                sessionStorage.setItem('selectedPlan', plan);
+                                sessionStorage.setItem('selectedPlanMinutes', String(minutes));
+                                const services = this.getSelectedServices();
+                                sessionStorage.setItem('selectedService', services[0]||'');
+                                sessionStorage.setItem('selectedServices', JSON.stringify(services));
+                                sessionStorage.setItem('selectedServiceForPlan', this.selectedServiceForPlan||'');
+                                this.savePlanHistory({
+                                    date: this.selectedDate?.dateStr||'',
+                                    time: this.selectedTime||'',
+                                    plan: plan,
+                                    minutes: minutes,
+                                    service: this.selectedServiceForPlan||services[0]||'',
+                                    menuId: this.menuId||'',
+                                    badge: this.menuPlan && this.menuPlan.enabled ? { text: this.menuPlan.badgeText||'', color: this.menuPlan.badgeColor||'', icon: this.menuPlan.badgeIcon||'' } : null,
+                                    createdAt: Date.now()
+                                });
+                            }catch(e){}
+                            window.location.href = '07_confirmation.html';
+                        },
+                
+                // サンプルデータ（実際はAPIから取得）
+                availableDates: [
+                    '2024-01-15', '2024-01-16', '2024-01-17', '2024-01-18', '2024-01-19',
+                    '2024-01-22', '2024-01-23', '2024-01-24', '2024-01-25', '2024-01-26',
+                    '2024-01-29', '2024-01-30', '2024-01-31'
+                ],
+                // ローカルタイムで YYYY-MM-DD を生成
+                toLocalYmd(y, mZeroBased, d){
+                    const dt = new Date(y, mZeroBased, d);
+                    const yy = dt.getFullYear();
+                    const mm = String(dt.getMonth()+1).padStart(2,'0');
+                    const dd = String(dt.getDate()).padStart(2,'0');
+                    return `${yy}-${mm}-${dd}`;
+                },
+                
+                get currentMonthYear() {
+                    const months = ['1月', '2月', '3月', '4月', '5月', '6月', 
+                                   '7月', '8月', '9月', '10月', '11月', '12月'];
+                    return `${this.currentDate.getFullYear()}年${months[this.currentDate.getMonth()]}`;
+                },
+                
+                get calendarDays() {
+                    const year = this.currentDate.getFullYear();
+                    const month = this.currentDate.getMonth();
+                    const firstDay = new Date(year, month, 1);
+                    const lastDay = new Date(year, month + 1, 0);
+                    const daysInMonth = lastDay.getDate();
+                    const startingDayOfWeek = (firstDay.getDay() + 6) % 7; // 月曜日を0にする
+                    
+                    const days = [];
+                    
+                    // 前月の日付
+                    const prevMonth = new Date(year, month, 0);
+                    for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+                        days.push({
+                            date: prevMonth.getDate() - i,
+                            dateStr: this.toLocalYmd(year, month-1, prevMonth.getDate() - i),
+                            isCurrentMonth: false,
+                            isToday: false,
+                            isAvailable: false
+                        });
+                    }
+                    
+                    // 当月の日付
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        const dateStr = this.toLocalYmd(year, month, day);
+                        const today = new Date();
+                        const isToday = year === today.getFullYear() && 
+                                       month === today.getMonth() && 
+                                       day === today.getDate();
+                        const isAvailable = this.availableDates.includes(dateStr);
+                        
+                        days.push({
+                            date: day,
+                            dateStr: dateStr,
+                            isCurrentMonth: true,
+                            isToday: isToday,
+                            isAvailable: isAvailable
+                        });
+                    }
+                    
+                    // 次月の日付（カレンダーを埋めるため）
+                    const remainingDays = 42 - days.length; // 6週間分
+                    for (let day = 1; day <= remainingDays; day++) {
+                        days.push({
+                            date: day,
+                            dateStr: this.toLocalYmd(year, month+1, day),
+                            isCurrentMonth: false,
+                            isToday: false,
+                            isAvailable: false
+                        });
+                    }
+                    
+                    return days;
+                },
+                
+                getDayClass(day) {
+                    const classes = [];
+                    
+                    if (!day.isCurrentMonth) {
+                        classes.push('other-month');
+                    }
+                    
+                    if (day.isToday) {
+                        classes.push('today');
+                    }
+                    
+                    if (day.isAvailable) {
+                        classes.push('available');
+                    } else if (day.isCurrentMonth) {
+                        classes.push('unavailable');
+                    }
+                    
+                    if (this.selectedDate && this.selectedDate.dateStr === day.dateStr) {
+                        classes.push('selected');
+                    }
+                    
+                    return classes.join(' ');
+                },
+                
+                selectDate(day) {
+                    if (!day || !day.isCurrentMonth) return;
+                    this.selectedDate = day;
+                    this.renderTimeline();
+                    // 日付切替時は選択中の時間と可用分数をリセット
+                    this.selectedTime = '';
+                    this.availableMinutes = null;
+                },
+                selectDateAndClose(day){
+                    this.selectDate(day);
+                    try{
+                        const root = document.querySelector('.collapse[open]') || document.querySelector('.collapse');
+                        if(root){
+                            // details要素を閉じる
+                            root.removeAttribute('open');
+                        }
+                    }catch(_e){}
+                },
+                
+                selectPlan(plan) {
+                    // クリックで選択状態をトグルし、同一クリックで閉じられるようにする
+                    this.selectedPlan = (this.selectedPlan === plan) ? null : plan;
+                },
+                
+                previousMonth() {
+                    this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() - 1, 1);
+                },
+                
+                nextMonth() {
+                    this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() + 1, 1);
+                },
+                // タイムライン描画（予約済みを反映）
+                renderTimeline(){
+                    const container = document.getElementById('timelineCell');
+                    if(!container || !this.selectedDate) return;
+                    // 既存ブロック削除
+                    Array.from(container.querySelectorAll('.event-block')).forEach(n=>n.remove());
+                    // 時刻ラベルを再描画
+                    const labelsWrap = document.getElementById('timeLabels');
+                    if (labelsWrap) {
+                        labelsWrap.innerHTML = '';
+                        for (let h = 10; h <= 19; h++) {
+                            const top = (h - 10) * 60; // 1分=1px換算
+                            const lbl = document.createElement('div');
+                            lbl.className = 'time-label';
+                            lbl.style.top = `${top}px`;
+                            lbl.textContent = `${String(h).padStart(2,'0')}:00`;
+                            labelsWrap.appendChild(lbl);
+                        }
+                    }
+                    const dateStr = this.selectedDate.dateStr;
+                    // localStorageから当日の予約を描画
+                    Object.keys(localStorage).forEach(key=>{
+                        if(!key.startsWith(`schedule_${dateStr}_`)) return;
+                        try{
+                            const s = JSON.parse(localStorage.getItem(key)||'null');
+                            if(!s||!s.time) return;
+                            this.drawReservationBlock(container, s);
+                        }catch{}
+                    });
+                    
+                    // 休憩時間を描画
+                    Object.keys(localStorage).forEach(key=>{
+                        if(!key.startsWith(`break_${dateStr}_`)) return;
+                        try{
+                            const s = JSON.parse(localStorage.getItem(key)||'null');
+                            if(!s||!s.time) return;
+                            this.drawBreakBlock(container, s);
+                        }catch{}
+                    });
+                },
+                drawReservationBlock(container, s){
+                    // 時間範囲の形式に対応（"14:00-15:00" または "14:00"）
+                    let startMinAbs, duration;
+                    if(s.time.includes('-')){
+                        const [startTime, endTime] = s.time.split('-');
+                        const [sh, sm] = startTime.split(':').map(Number);
+                        const [eh, em] = endTime.split(':').map(Number);
+                        startMinAbs = sh*60 + sm;
+                        duration = (eh*60 + em) - startMinAbs;
+                    } else {
+                        const [h,m] = s.time.split(':').map(Number);
+                        startMinAbs = h*60 + m;
+                        duration = parseInt(s.duration||'60',10);
+                    }
+                    
+                    const startMin = startMinAbs - 10*60; // 10:00基準
+                    const top = Math.max(0, startMin);
+                    const height = Math.max(16, Math.min(duration, 540 - top));
+                    const block = document.createElement('div');
+                    
+                    // スタッフ別の色分け
+                    const staffClass = s.staff ? `staff-${s.staff}` : 'staff-default';
+                    block.className = `event-block ${staffClass}`;
+                    block.style.top = `${top}px`;
+                    block.style.height = `${height}px`;
+                    block.innerHTML = `<div class="text-xs">予約済み</div>`;
+                    container.appendChild(block);
+                },
+                drawBreakBlock(container, s){
+                    // 休憩時間の描画
+                    let startMinAbs, duration;
+                    if(s.time.includes('-')){
+                        const [startTime, endTime] = s.time.split('-');
+                        const [sh, sm] = startTime.split(':').map(Number);
+                        const [eh, em] = endTime.split(':').map(Number);
+                        startMinAbs = sh*60 + sm;
+                        duration = (eh*60 + em) - startMinAbs;
+                    } else {
+                        const [h,m] = s.time.split(':').map(Number);
+                        startMinAbs = h*60 + m;
+                        duration = parseInt(s.duration||'30',10);
+                    }
+                    
+                    const startMin = startMinAbs - 10*60; // 10:00基準
+                    const top = Math.max(0, startMin);
+                    const height = Math.max(16, Math.min(duration, 540 - top));
+                    const block = document.createElement('div');
+                    
+                    block.className = `event-block staff-default`;
+                    block.style.top = `${top}px`;
+                    block.style.height = `${height}px`;
+                    block.style.background = '#f59e0b';
+                    block.style.opacity = '0.7';
+                    block.innerHTML = `<div class="text-xs">休憩</div>`;
+                    container.appendChild(block);
+                },
+                handleTimelineClick(e){
+                    if(!this.selectedDate){
+                        // 日付未選択なら本日を自動選択してから続行
+                        const today = new Date();
+                        this.selectedDate = { dateStr: `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}` };
+                        this.renderTimeline();
+                    }
+                    const container = document.getElementById('timelineCell');
+                    const rect = container.getBoundingClientRect();
+                    const y = e.clientY - rect.top;
+                    // 5分刻みにスナップ
+                    const raw = Math.max(0, Math.min(539, Math.round(y)));
+                    const minutesFromStart = Math.round(raw / 5) * 5;
+                    const absMinutes = 10*60 + minutesFromStart; // 10:00基準
+
+                    // 予約済み範囲なら選択不可
+                    if (this.isBusyAt(this.selectedDate.dateStr, absMinutes)) {
+                        return;
+                    }
+                    const hh = String(Math.floor(absMinutes/60)).padStart(2,'0');
+                    const mm = String(absMinutes%60).padStart(2,'0');
+                    this.selectedTime = `${hh}:${mm}`;
+                    // 空き幅（直前終了〜直後開始）を算出
+                    this.availableMinutes = this.computeAvailableMinutes(this.selectedDate.dateStr, absMinutes);
+
+                    // クリックフィードバック表示
+                    // 既存インジケーター除去
+                    const oldLine = container.querySelector('.click-indicator');
+                    if (oldLine) oldLine.remove();
+                    const oldBadge = container.querySelector('.click-badge');
+                    if (oldBadge) oldBadge.remove();
+                    // ライン
+                    const line = document.createElement('div');
+                    line.className = 'click-indicator';
+                    line.style.top = `${minutesFromStart}px`;
+                    container.appendChild(line);
+                    // バッジ
+                    const badge = document.createElement('div');
+                    badge.className = 'click-badge';
+                    badge.style.top = `${minutesFromStart}px`;
+                    // バッジ内部に時刻テキストと上下矢印
+                    const timeText = document.createElement('span');
+                    timeText.textContent = `${hh}:${mm}`;
+                    const arrows = document.createElement('div');
+                    arrows.className = 'badge-arrows';
+                    const up = document.createElement('button');
+                    up.type = 'button';
+                    up.className = 'btn btn-ghost btn-xs';
+                    up.innerHTML = '<i class="fas fa-chevron-up"></i>';
+                    up.addEventListener('click', (ev)=>{ ev.stopPropagation(); this.nudgeTime(-this.getTimeStep()); });
+                    const down = document.createElement('button');
+                    down.type = 'button';
+                    down.className = 'btn btn-ghost btn-xs';
+                    down.innerHTML = '<i class="fas fa-chevron-down"></i>';
+                    down.addEventListener('click', (ev)=>{ ev.stopPropagation(); this.nudgeTime(this.getTimeStep()); });
+                    arrows.appendChild(up); arrows.appendChild(down);
+                    badge.appendChild(timeText); badge.appendChild(arrows);
+                    container.appendChild(badge);
+                    // 軽いフラッシュ
+                    container.classList.remove('click-flash');
+                    // reflow to restart animation
+                    void container.offsetWidth;
+                    container.classList.add('click-flash');
+                },
+                // 近傍の空き範囲を元に微調整（5/10分）
+                nudgeTime(delta){
+                    if(!this.selectedDate || !this.selectedTime) return;
+                    const [h,m] = this.selectedTime.split(':').map(Number);
+                    let abs = h*60 + m + delta;
+                    // 日内にクランプ
+                    abs = Math.max(10*60, Math.min(19*60-1, abs));
+                    // 5分刻みにスナップ
+                    abs = Math.round(abs/5)*5;
+                    // 予約済みに入る場合は近い空き境界へ補正
+                    if (this.isBusyAt(this.selectedDate.dateStr, abs)) {
+                        const corrected = this.snapToNearestFree(this.selectedDate.dateStr, abs, Math.sign(delta)||1);
+                        if (corrected == null) return; // 空きなし
+                        abs = corrected;
+                    }
+                    const hh = String(Math.floor(abs/60)).padStart(2,'0');
+                    const mm = String(abs%60).padStart(2,'0');
+                    this.selectedTime = `${hh}:${mm}`;
+                    this.availableMinutes = this.computeAvailableMinutes(this.selectedDate.dateStr, abs);
+                    // インジケーター位置も更新
+                    const container = document.getElementById('timelineCell');
+                    const y = abs - 10*60;
+                    const oldLine = container.querySelector('.click-indicator');
+                    if (oldLine) oldLine.style.top = `${y}px`;
+                    const oldBadge = container.querySelector('.click-badge');
+                    if (oldBadge) {
+                        oldBadge.style.top = `${y}px`;
+                        const span = oldBadge.querySelector('span');
+                        if(span){ span.textContent = `${hh}:${mm}`; }
+                    }
+                },
+                // 設定のステップ分（分）を取得（localStorage.timeAdjustStepが数値であれば採用、なければ5）
+                getTimeStep(){
+                    try{
+                        const v = parseInt(localStorage.getItem('timeAdjustStep')||'');
+                        if(!isNaN(v) && v>0 && v<=60) return v;
+                    }catch(_e){}
+                    return 5;
+                },
+                // 分単位の時刻が予約で埋まっているか判定
+                isBusyAt(dateStr, absMinutes){
+                    let busy = false;
+                    Object.keys(localStorage).forEach(key=>{
+                        if(busy) return;
+                        if(!key.startsWith(`schedule_${dateStr}_`)) return;
+                        try{
+                            const s = JSON.parse(localStorage.getItem(key)||'null');
+                            if(!s||!s.time) return;
+                            let start, end;
+                            if(s.time.includes('-')){
+                                const [st, et] = s.time.split('-');
+                                const [sh, sm] = st.split(':').map(Number);
+                                const [eh, em] = et.split(':').map(Number);
+                                start = sh*60 + sm; end = eh*60 + em;
+                            } else {
+                                const [h,m] = s.time.split(':').map(Number);
+                                start = h*60 + m; end = start + parseInt(s.duration||'60',10);
+                            }
+                            if (start <= absMinutes && absMinutes < end) busy = true;
+                        }catch{}
+                    });
+                    return busy;
+                },
+                // 近い空き境界へスナップ
+                snapToNearestFree(dateStr, absMinutes, direction){
+                    const ranges = this.getFreeRanges(dateStr);
+                    if (!ranges.length) return null;
+                    // 既に空き範囲ならそのまま（5分単位維持）
+                    for (const r of ranges){
+                        if (r.start <= absMinutes && absMinutes < r.end) return absMinutes;
+                    }
+                    // 方向に応じて近い境界
+                    if (direction >= 0){
+                        // 先の空き開始へ
+                        const candidates = ranges.filter(r=> r.start >= absMinutes).map(r=> r.start);
+                        if (candidates.length) return Math.min(...candidates);
+                    } else {
+                        // 手前の空き終了-1へ
+                        const candidates = ranges.filter(r=> r.end <= absMinutes).map(r=> r.end - 1);
+                        if (candidates.length) return Math.max(...candidates);
+                    }
+                    return null;
+                },
+                // 当日の予約から空き範囲配列を返す
+                getFreeRanges(dateStr){
+                    const dayStart = 10*60; const dayEnd = 19*60;
+                    const ranges = [];
+                    const busy = [];
+                    Object.keys(localStorage).forEach(key=>{
+                        if(!key.startsWith(`schedule_${dateStr}_`)) return;
+                        try{
+                            const s = JSON.parse(localStorage.getItem(key)||'null');
+                            if(!s||!s.time) return;
+                            let start, end;
+                            if(s.time.includes('-')){
+                                const [st, et] = s.time.split('-');
+                                const [sh, sm] = st.split(':').map(Number);
+                                const [eh, em] = et.split(':').map(Number);
+                                start = sh*60 + sm; end = eh*60 + em;
+                            } else {
+                                const [h,m] = s.time.split(':').map(Number);
+                                start = h*60 + m; end = start + parseInt(s.duration||'60',10);
+                            }
+                            busy.push({start, end});
+                        }catch{}
+                    });
+                    busy.sort((a,b)=>a.start-b.start);
+                    let cur = dayStart;
+                    for(const b of busy){
+                        if (cur < b.start) ranges.push({start: cur, end: b.start});
+                        cur = Math.max(cur, b.end);
+                    }
+                    if (cur < dayEnd) ranges.push({start: cur, end: dayEnd});
+                    return ranges;
+                },
+                computeAvailableMinutes(dateStr, clickAbsMinutes){
+                    const dayEnd = 19*60;
+                    const list = [];
+                    Object.keys(localStorage).forEach(key=>{
+                        if(!key.startsWith(`schedule_${dateStr}_`)) return;
+                        try{
+                            const s = JSON.parse(localStorage.getItem(key)||'null');
+                            if(!s||!s.time) return;
+                            // 時間範囲の形式に対応（"14:00-15:00" または "14:00"）
+                            let start, end;
+                            if(s.time.includes('-')){
+                                const [startTime, endTime] = s.time.split('-');
+                                const [sh, sm] = startTime.split(':').map(Number);
+                                const [eh, em] = endTime.split(':').map(Number);
+                                start = sh*60 + sm;
+                                end = eh*60 + em;
+                            } else {
+                                const [h,m] = s.time.split(':').map(Number);
+                                start = h*60 + m;
+                                end = start + parseInt(s.duration||'60',10);
+                            }
+                            list.push({start, end});
+                        }catch{}
+                    });
+                    list.sort((a,b)=>a.start-b.start);
+                    let nextStart = dayEnd;
+                    for(const r of list){
+                        if(r.start > clickAbsMinutes){ nextStart = r.start; break; }
+                    }
+                    return Math.max(0, nextStart - clickAbsMinutes);
+                },
+                isPlanAvailable(required){
+                    if(this.availableMinutes==null) return false;
+                    return this.availableMinutes >= required;
+                },
+                
+                get selectedDateDisplay() {
+                    if (!this.selectedDate) return '';
+                    const date = new Date(this.selectedDate.dateStr);
+                    const months = ['1月', '2月', '3月', '4月', '5月', '6月', 
+                                   '7月', '8月', '9月', '10月', '11月', '12月'];
+                    return `${date.getFullYear()}年${months[date.getMonth()]}${date.getDate()}日`;
+                },
+                
+                get selectedPlanDisplay() {
+                    const planNames = {
+                        'planA': 'プランA',
+                        'planB': 'プランB',
+                        'planC': 'プランC',
+                        'planD': 'プランD',
+                        'planE': 'プランE'
+                    };
+                    return planNames[this.selectedPlan] || '';
+                },
+                
+                // チェックボックスからサービス選択を取得
+                getSelectedServices(){
+                    const nodes = document.querySelectorAll('input[name="service"]:checked');
+                    return Array.from(nodes).map(n=>n.value);
+                },
+                
+                // サービス選択の変更を監視
+                watchServiceSelection() {
+                    const checkboxes = document.querySelectorAll('input[name="service"]');
+                    checkboxes.forEach(checkbox => {
+                        checkbox.addEventListener('change', () => {
+                            const services = this.getSelectedServices();
+                            if (services.length > 0) {
+                                this.selectedServiceForPlan = services[0];
+                            }
+                        });
+                    });
+                },
+                // プラン側のサービスチェック群（デフォルトはカレンダー上の選択を反映）
+                initPlanServiceChecks(){
+                    const services = this.getSelectedServices();
+                    const setChecked = (val, on)=>{
+                        const el = document.querySelector(`input.checkbox[value="${val}"]`);
+                        if(el){ el.checked = on; }
+                    };
+                    ['acupuncture','moxibustion','seitai'].forEach(v=> setChecked(v, services.includes(v)));
+                    this.selectedServiceForPlan = services[0]||'';
+                },
+                togglePlanService(ev){
+                    const services = Array.from(document.querySelectorAll('.min-w-0 input.checkbox:checked')).map(n=>n.value);
+                    this.selectedServiceForPlan = services[0]||'';
+                },
+                
+                get selectedServiceDisplay() {
+                    const serviceNames = { 'acupuncture': '鍼', 'moxibustion': '灸', 'seitai': '整体' };
+                    const list = this.getSelectedServices();
+                    return list.map(v=>serviceNames[v]||v).join('、');
+                },
+                
+                setBreakTime() {
+                    if (!this.selectedDate || !this.selectedTime) return;
+                    
+                    // 休憩時間としてlocalStorageに保存
+                    const breakKey = `break_${this.selectedDate.dateStr}_${Date.now()}`;
+                    const breakData = {
+                        time: this.selectedTime,
+                        duration: this.availableMinutes,
+                        type: 'break',
+                        created: new Date().toISOString()
+                    };
+                    
+                    try {
+                        localStorage.setItem(breakKey, JSON.stringify(breakData));
+                        alert('休憩時間として設定しました。');
+                        // タイムラインを再描画
+                        this.renderTimeline();
+                    } catch (e) {
+                        console.error('休憩時間の設定に失敗しました:', e);
+                        alert('休憩時間の設定に失敗しました。');
+                    }
+                },
+                
+                proceedToNext() {
+                    const services = this.getSelectedServices();
+                    if (!this.selectedDate || !this.selectedPlan || services.length===0 || !this.selectedTime) {
+                        return;
+                    }
+                    
+                    // セッションストレージに選択内容を保存
+                    try {
+                        sessionStorage.setItem('selectedDate', this.selectedDate.dateStr);
+                        sessionStorage.setItem('selectedPlan', this.selectedPlan);
+                        sessionStorage.setItem('selectedService', services[0] || '');
+                        sessionStorage.setItem('selectedServices', JSON.stringify(services));
+                        sessionStorage.setItem('selectedTime', this.selectedTime);
+                        sessionStorage.setItem('selectedServiceForPlan', this.selectedServiceForPlan || '');
+                        this.savePlanHistory({
+                            date: this.selectedDate.dateStr,
+                            time: this.selectedTime,
+                            plan: this.selectedPlan,
+                            minutes: (function(p){ const m={planA:30,planB:60,planC:90,planD:120,planE:180}; return m[p]||0; })(this.selectedPlan),
+                            service: this.selectedServiceForPlan || services[0] || '',
+                            menuId: this.menuId||'',
+                            badge: this.menuPlan && this.menuPlan.enabled ? { text: this.menuPlan.badgeText||'', color: this.menuPlan.badgeColor||'', icon: this.menuPlan.badgeIcon||'' } : null,
+                            createdAt: Date.now()
+                        });
+                    } catch (e) {
+                        console.warn('セッションストレージへの保存に失敗しました:', e);
+                    }
+                    
+                    // 次のページへ遷移
+                    window.location.href = '06_customer_info.html';
+                },
+                openPlanDetail(code, minutes){
+                    const map = {
+                        'A': { title: 'プランA（30分）', desc: '基本の30分プランです。短時間で気になる箇所を集中的にケアします。' },
+                        'B': { title: 'プランB（60分）', desc: 'しっかり全身をケアする標準プランです。初めての方にもおすすめ。' },
+                        'C': { title: 'プランC（90分）', desc: '時間をかけて深部までほぐす満足度の高いプランです。' },
+                        'D': { title: 'プランD（120分）', desc: '全身＋重点部位ケアのリッチなプラン。定期的なメンテナンスに。' },
+                        'E': { title: 'プランE（180分）', desc: '贅沢なロングコース。特別な日のご褒美にも最適です。' }
+                    };
+                    const data = map[code] || { title: `プラン${code}（${minutes}分）`, desc: '' };
+                    const modal = document.createElement('dialog');
+                    modal.className = 'modal';
+                    modal.innerHTML = `
+                        <div class="modal-box">
+                            <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+                            <h3 class="font-bold text-lg mb-3"><i class="fas fa-info-circle mr-2"></i>${data.title}</h3>
+                            <figure class="h-40 bg-base-300 mb-3 rounded">
+                                <div class="w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                                    <span class="text-sm text-base-content/50">プランイメージ</span>
+                                </div>
+                            </figure>
+                            <p class="text-sm leading-relaxed">${data.desc}</p>
+                            <div class="modal-action">
+                                <button class="btn" onclick="this.closest('dialog').close()">閉じる</button>
+                            </div>
+                        </div>`;
+                    document.body.appendChild(modal);
+                    modal.showModal();
+                },
+                // プラン適用可否
+                isMenuPlanApplicable(){
+                    const p = this.menuPlan;
+                    if(!p || !p.enabled) return false;
+                    // 日付必須
+                    if(!this.selectedDate || !this.selectedDate.dateStr) return false;
+                    const d = new Date(this.selectedDate.dateStr + 'T00:00:00');
+                    // 期間
+                    if(p.validFrom){ const from = new Date(p.validFrom + 'T00:00:00'); if(d < from) return false; }
+                    if(p.validTo){ const to = new Date(p.validTo + 'T23:59:59'); if(d > to) return false; }
+                    // 曜日
+                    if(Array.isArray(p.weekdays) && p.weekdays.length){ const w = (d.getDay()); if(!p.weekdays.map(x=>parseInt(x,10)).includes(w)) return false; }
+                    // 当日割
+                    if(p.sameDayOnly){ const today = new Date(); const ymd = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`; if(this.selectedDate.dateStr !== ymd) return false; }
+                    // 早割
+                    if(p.earlyBirdDays && p.earlyBirdDays>0){
+                        const today = new Date();
+                        const base = new Date(`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}T00:00:00`);
+                        const diff = Math.floor((d - base)/86400000);
+                        if(diff < p.earlyBirdDays) return false;
+                    }
+                    // 時間帯
+                    if(p.timeFrom || p.timeTo){
+                        if(!this.selectedTime) return false;
+                        const [sh,sm] = (p.timeFrom||'00:00').split(':').map(Number);
+                        const [eh,em] = (p.timeTo||'23:59').split(':').map(Number);
+                        const [th,tm] = this.selectedTime.split(':').map(Number);
+                        const s = sh*60+sm, e = eh*60+em, t = th*60+tm;
+                        if(!(s <= t && t <= e)) return false;
+                    }
+                    return true;
+                },
+                // メニュー・プラン読込
+                loadMenuPlan(){
+                    try{
+                        const raw = localStorage.getItem('menus');
+                        if(!raw) return;
+                        const arr = JSON.parse(raw);
+                        const id = this.menuId;
+                        if(!id) return;
+                        const rec = arr.find(x=> String(x.id)===String(id));
+                        if(rec && rec.plan){ this.menuPlan = rec.plan; }
+                    }catch(_e){}
+                },
+                // 履歴
+                loadPlanHistory(){
+                    try{ const raw = localStorage.getItem('planHistory'); this.planHistory = raw? JSON.parse(raw): []; }catch{ this.planHistory = []; }
+                },
+                savePlanHistory(entry){
+                    try{
+                        const raw = localStorage.getItem('planHistory');
+                        const list = raw? JSON.parse(raw): [];
+                        list.unshift(entry);
+                        while(list.length>10) list.pop();
+                        localStorage.setItem('planHistory', JSON.stringify(list));
+                        this.planHistory = list;
+                    }catch(_e){}
+                },
+                reapplyHistory(item){
+                    if(item.date){ this.selectedDate = { dateStr: item.date }; this.renderTimeline(); }
+                    if(item.time){ this.selectedTime = item.time; this.availableMinutes = this.computeAvailableMinutes(item.date, (function(t){ const [h,m]=t.split(':').map(Number); return h*60+m; })(item.time)); }
+                    if(item.plan){ this.selectedPlan = item.plan; }
+                    if(item.service){ this.selectedServiceForPlan = item.service; }
+                },
+                
+                init() {
+                    // サービス選択の監視を開始
+                    this.$nextTick(() => {
+                        this.watchServiceSelection();
+                        this.initPlanServiceChecks();
+                        this.loadMenuPlan();
+                        this.loadPlanHistory();
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>

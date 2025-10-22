@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>設定</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.20/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>.menu li > a.menu-active { background-color: rgb(59 130 246 / 0.1) !important; color: rgb(59 130 246) !important; border-right: 2px solid rgb(59 130 246); font-weight: 600; } .menu li > a:hover:not(.menu-active) { background-color: rgb(0 0 0 / 0.05); }</style>
+</head>
+<body class="bg-base-200 min-h-screen">
+    <div class="drawer lg:drawer-open">
+        <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-side"><label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label><aside class="min-h-full w-64 bg-base-100 shadow-lg relative"><div id="sidebar-slot"></div></aside></div>
+        <div class="drawer-content">
+            <div class="navbar bg-base-100 shadow-sm lg:hidden"><div class="navbar-start"><label for="drawer-toggle" class="btn btn-square btn-ghost"><i class="fas fa-bars text-xl"></i></label></div><div class="navbar-center"><span class="text-lg font-semibold">設定</span></div></div>
+            <div class="p-6" x-data="settings()">
+                <h1 class="text-2xl font-bold mb-6">設定</h1>
+                
+                
+                <!-- 営業日設定 -->
+                <div class="card bg-base-100 shadow-sm mb-6">
+                    <div class="card-body p-4">
+                        <h2 class="card-title">
+                            <i class="fas fa-calendar-alt"></i>
+                            営業日設定
+                        </h2>
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">営業日を選択</span>
+                            </label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <template x-for="(day, index) in weekDays" :key="index">
+                                    <label class="label cursor-pointer">
+                                        <span class="label-text" x-text="day.name"></span>
+                                        <input type="checkbox" 
+                                               class="checkbox checkbox-primary" 
+                                               :checked="day.isOpen"
+                                               @change="toggleBusinessDay(index)">
+                                    </label>
+                                </template>
+                            </div>
+                        </div>
+                        
+                        <!-- 営業時間設定 -->
+                        <div class="form-control mt-4">
+                            <label class="label">
+                                <span class="label-text">営業時間</span>
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <input type="time" 
+                                       class="input input-bordered" 
+                                       x-model="businessHours.start"
+                                       @change="saveSettings()">
+                                <span>〜</span>
+                                <input type="time" 
+                                       class="input input-bordered" 
+                                       x-model="businessHours.end"
+                                       @change="saveSettings()">
+                            </div>
+                        </div>
+
+                        
+                    </div>
+                </div>
+                
+            <!-- 臨時休業設定 -->
+            <div class="card bg-base-100 shadow-sm mb-6">
+                <div class="card-body">
+                    <h2 class="card-title">
+                        <i class="fas fa-ban"></i>
+                        臨時休業
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div class="form-control">
+                            <label class="label"><span class="label-text">日付</span></label>
+                            <input type="date" class="input input-bordered" x-model="newClosureDate">
+                        </div>
+                        <div class="form-control md:col-span-2">
+                            <label class="label"><span class="label-text">メモ（任意）</span></label>
+                            <input type="text" class="input input-bordered" placeholder="例: 設備点検" x-model="newClosureNote">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-primary" @click="addClosure"><i class="fas fa-plus mr-1"></i>追加</button>
+                    </div>
+
+                    <div class="overflow-x-auto mt-4">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th class="w-40">日付</th>
+                                    <th>メモ</th>
+                                    <th class="w-24">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="c in upcomingClosures()" :key="c.date + '|' + (c.note||'')">
+                                    <tr>
+                                        <td x-text="c.date"></td>
+                                        <td x-text="c.note||''"></td>
+                                        <td>
+                                            <button class="btn btn-error btn-xs" @click="removeClosureByKey(c.date, c.note)">削除</button>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <tr x-show="upcomingClosures().length===0">
+                                    <td colspan="3" class="text-center text-base-content/60">予定されている臨時休業はありません</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+                <!-- インターバル設定 -->
+                <div class="card bg-base-100 shadow-sm mb-6">
+                    <div class="card-body">
+                        <h2 class="card-title">
+                            <i class="fas fa-clock"></i>
+                            インターバル設定
+                        </h2>
+                        <div class="form-control">
+                            <label class="label cursor-pointer">
+                                <span class="label-text">インターバル運用を有効にする</span>
+                                <input type="checkbox" 
+                                       class="toggle toggle-primary" 
+                                       x-model="intervalEnabled"
+                                       @change="saveSettings()">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 20分前倒し提案設定 -->
+                <div class="card bg-base-100 shadow-sm mb-6">
+                    <div class="card-body">
+                        <h2 class="card-title">
+                            <i class="fas fa-forward"></i>
+                            前倒し提案設定
+                        </h2>
+                        <div class="form-control">
+                            <label class="label cursor-pointer">
+                                <span class="label-text">20分前倒し提案を有効にする</span>
+                                <input type="checkbox" 
+                                       class="toggle toggle-primary" 
+                                       x-model="enableEarlyBooking"
+                                       @change="saveSettings()">
+                            </label>
+                        </div>
+                        <div class="form-control mt-2" x-show="enableEarlyBooking">
+                            <label class="label">
+                                <span class="label-text">前倒し時間（分）</span>
+                            </label>
+                            <input type="number" 
+                                   class="input input-bordered" 
+                                   x-model="earlyBookingMinutes"
+                                   @change="saveSettings()"
+                                   min="5" max="60">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 店舗・治療院設定（アコーディオン） -->
+                <div id="sec-clinic" class="collapse collapse-arrow bg-base-100 shadow-sm mb-6">
+                    <input type="checkbox" />
+                    <div class="collapse-title text-lg font-medium">
+                        <i class="fas fa-store mr-2"></i>
+                        店舗・治療院設定
+                    </div>
+                    <div class="collapse-content">
+                        <!-- 店舗・治療院情報 -->
+                        <div id="sec-clinic-info" class="mb-6">
+                            <h3 class="text-lg font-semibold mb-3">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                店舗・治療院情報
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text">店舗カテゴリ</span>
+                                    </label>
+                                    <select class="select select-bordered" x-model="clinicInfo.category">
+                                        <option value="relax">リラクゼーション</option>
+                                        <option value="seitai">整体</option>
+                                        <option value="acupuncture">鍼灸</option>
+                                        <option value="massage">マッサージ</option>
+                                    </select>
+                                </div>
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text">店舗・治療院名</span>
+                                    </label>
+                                    <input type="text" class="input input-bordered" x-model="clinicInfo.name" @change="saveClinicInfo()">
+                                </div>
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text">店舗・治療院名（カナ）</span>
+                                    </label>
+                                    <input type="text" class="input input-bordered" x-model="clinicInfo.nameKana" @change="saveClinicInfo()">
+                                </div>
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text">代表メールアドレス</span>
+                                    </label>
+                                    <input type="email" class="input input-bordered" x-model="clinicInfo.email" @change="saveClinicInfo()">
+                                </div>
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text">電話番号</span>
+                                    </label>
+                                    <input type="tel" class="input input-bordered" x-model="clinicInfo.phone" @change="saveClinicInfo()">
+                                </div>
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text">営業時間</span>
+                                    </label>
+                                    <input type="text" class="input input-bordered" x-model="clinicInfo.businessHours" @change="saveClinicInfo()">
+                                </div>
+                            </div>
+                            <div class="form-control mt-4">
+                                <label class="label">
+                                    <span class="label-text">店舗ロゴ</span>
+                                </label>
+                                <input type="file" class="file-input file-input-bordered w-full" accept="image/*" @change="handleLogoUpload($event)">
+                            </div>
+                        </div>
+                        
+                        <!-- サービス提供者 -->
+                        <div id="sec-providers" class="mb-6">
+                            <h3 class="text-lg font-semibold mb-3">
+                                <i class="fas fa-hand-holding-medical mr-2"></i>
+                                サービス提供者
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
+                                    <div class="flex items-center gap-3">
+                                        <div class="avatar placeholder">
+                                            <div class="bg-primary text-primary-content rounded-full w-10">
+                                                <span class="text-sm">田中</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="font-semibold">田中 太郎</div>
+                                            <div class="text-sm text-base-content/60">整体師</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button class="btn btn-xs btn-outline">編集</button>
+                                        <button class="btn btn-xs btn-error">削除</button>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
+                                    <div class="flex items-center gap-3">
+                                        <div class="avatar placeholder">
+                                            <div class="bg-secondary text-secondary-content rounded-full w-10">
+                                                <span class="text-sm">佐藤</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="font-semibold">佐藤 花子</div>
+                                            <div class="text-sm text-base-content/60">鍼灸師</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button class="btn btn-xs btn-outline">編集</button>
+                                        <button class="btn btn-xs btn-error">削除</button>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary btn-sm w-full">
+                                    <i class="fas fa-plus mr-2"></i>サービス提供者を追加
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- メニュー管理 -->
+                        <div id="sec-menu" class="mb-6">
+                            <h3 class="text-lg font-semibold mb-3">
+                                <i class="fas fa-list mr-2"></i>
+                                メニュー管理
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
+                                    <div>
+                                        <div class="font-semibold">プランA（30分）</div>
+                                        <div class="text-sm text-base-content/60">3,500円</div>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button class="btn btn-xs btn-outline">編集</button>
+                                        <button class="btn btn-xs btn-error">削除</button>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
+                                    <div>
+                                        <div class="font-semibold">プランB（60分）</div>
+                                        <div class="text-sm text-base-content/60">6,000円</div>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button class="btn btn-xs btn-outline">編集</button>
+                                        <button class="btn btn-xs btn-error">削除</button>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
+                                    <div>
+                                        <div class="font-semibold">プランC（90分）</div>
+                                        <div class="text-sm text-base-content/60">9,000円</div>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button class="btn btn-xs btn-outline">編集</button>
+                                        <button class="btn btn-xs btn-error">削除</button>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary btn-sm w-full">
+                                    <i class="fas fa-plus mr-2"></i>メニューを追加
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 問診票一覧 -->
+                        <div id="sec-questionnaires" class="mb-6">
+                            <h3 class="text-lg font-semibold mb-3">
+                                <i class="fas fa-file-alt mr-2"></i>
+                                問診票一覧
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
+                                    <div>
+                                        <div class="font-semibold">初回問診票</div>
+                                        <div class="text-sm text-base-content/60">新規顧客用の基本問診票</div>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button class="btn btn-xs btn-outline">編集</button>
+                                        <button class="btn btn-xs btn-error">削除</button>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
+                                    <div>
+                                        <div class="font-semibold">定期問診票</div>
+                                        <div class="text-sm text-base-content/60">リピート顧客用の問診票</div>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button class="btn btn-xs btn-outline">編集</button>
+                                        <button class="btn btn-xs btn-error">削除</button>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary btn-sm w-full">
+                                    <i class="fas fa-plus mr-2"></i>問診票を追加
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ダッシュボード設定（アコーディオン） -->
+                <div class="collapse collapse-arrow bg-base-100 shadow-sm mb-6">
+                    <input type="checkbox" />
+                    <div class="collapse-title text-lg font-medium">
+                        <i class="fas fa-th-large mr-2"></i>
+                        ダッシュボード表示設定
+                    </div>
+                    <div class="collapse-content">
+                        <p class="text-sm text-base-content/70 mb-4">
+                            受付TOP画面の表示内容をドラッグ&ドロップで並び替えできます
+                        </p>
+                        
+                        <!-- 利用可能なウィジェット -->
+                        <div class="mb-6">
+                            <h3 class="text-lg font-semibold mb-3">利用可能なウィジェット</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="availableWidgets">
+                                <div class="widget-item bg-base-200 p-3 rounded-lg cursor-move" draggable="true" data-widget="recent-reservations">
+                                    <i class="fas fa-clock mr-2"></i>直近の予約
+                                </div>
+                                <div class="widget-item bg-base-200 p-3 rounded-lg cursor-move" draggable="true" data-widget="treatment-status">
+                                    <i class="fas fa-user-md mr-2"></i>施術中
+                                </div>
+                                <div class="widget-item bg-base-200 p-3 rounded-lg cursor-move" draggable="true" data-widget="kpi-cards">
+                                    <i class="fas fa-chart-bar mr-2"></i>来店数他
+                                </div>
+
+                            </div>
+                        </div>
+                        
+                        <!-- 現在の表示順序 -->
+                        <div>
+                            <h3 class="text-lg font-semibold mb-3">現在の表示順序</h3>
+                            <div class="min-h-32 bg-base-100 border-2 border-dashed border-base-300 rounded-lg p-4" id="dashboardLayout">
+                                <div class="text-center text-base-content/50" id="emptyMessage">
+                                    ウィジェットをドラッグして配置してください
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button class="btn btn-primary" @click="saveDashboardLayout()">
+                                <i class="fas fa-save mr-2"></i>レイアウトを保存
+                            </button>
+                            <button class="btn btn-ghost ml-2" @click="resetDashboardLayout()">
+                                <i class="fas fa-undo mr-2"></i>デフォルトに戻す
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ナビゲーション設定（アコーディオン） -->
+                <div class="collapse collapse-arrow bg-base-100 shadow-sm mb-6">
+                    <input type="checkbox" />
+                    <div class="collapse-title text-lg font-medium">
+                        <i class="fas fa-bars mr-2"></i>
+                        ナビゲーション設定
+                    </div>
+                    <div class="collapse-content">
+                        <p class="text-sm text-base-content/70 mb-4">
+                            ナビゲーションメニューの表示位置を設定できます
+                        </p>
+                        
+                        <div class="form-control">
+                            <label class="label cursor-pointer">
+                                <span class="label-text">ナビゲーション位置</span>
+                                <div class="flex gap-4">
+                                    <label class="label cursor-pointer">
+                                        <input type="radio" name="navPosition" value="left" class="radio radio-primary" 
+                                               :checked="navigationPosition === 'left'" @change="setNavigationPosition('left')">
+                                        <span class="label-text ml-2">左サイドバー</span>
+                                    </label>
+                                    <label class="label cursor-pointer">
+                                        <input type="radio" name="navPosition" value="top" class="radio radio-primary" 
+                                               :checked="navigationPosition === 'top'" @change="setNavigationPosition('top')">
+                                        <span class="label-text ml-2">上部ナビゲーション</span>
+                                    </label>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <!-- プレビュー -->
+                        <div class="mt-6">
+                            <h3 class="text-lg font-semibold mb-3">プレビュー</h3>
+                            <div class="bg-base-200 p-4 rounded-lg">
+                                <div x-show="navigationPosition === 'left'" class="flex gap-4">
+                                    <div class="w-48 bg-base-100 p-3 rounded shadow">
+                                        <div class="text-sm font-semibold mb-2">左サイドバー</div>
+                                        <div class="space-y-1 text-xs">
+                                            <div class="p-2 bg-primary/10 rounded">受付TOP</div>
+                                            <div class="p-2 bg-base-200 rounded">スケジュール</div>
+                                            <div class="p-2 bg-base-200 rounded">顧客管理</div>
+                                            <div class="p-2 bg-base-200 rounded">設定</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 bg-base-100 p-3 rounded shadow">
+                                        <div class="text-sm font-semibold mb-2">メインコンテンツ</div>
+                                        <div class="text-xs text-base-content/60">ここにメインの内容が表示されます</div>
+                                    </div>
+                                </div>
+                                <div x-show="navigationPosition === 'top'" class="space-y-4">
+                                    <div class="bg-base-100 p-3 rounded shadow">
+                                        <div class="text-sm font-semibold mb-2">上部ナビゲーション</div>
+                                        <div class="flex gap-2 text-xs">
+                                            <div class="p-2 bg-primary/10 rounded">受付TOP</div>
+                                            <div class="p-2 bg-base-200 rounded">スケジュール</div>
+                                            <div class="p-2 bg-base-200 rounded">顧客管理</div>
+                                            <div class="p-2 bg-base-200 rounded">設定</div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-base-100 p-3 rounded shadow">
+                                        <div class="text-sm font-semibold mb-2">メインコンテンツ</div>
+                                        <div class="text-xs text-base-content/60">ここにメインの内容が表示されます</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button class="btn btn-primary" @click="saveNavigationSettings()">
+                                <i class="fas fa-save mr-2"></i>ナビゲーション設定を保存
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="assets/common.js"></script>
+    
+    <script>
+        function settings() {
+            return {
+                weekDays: [
+                    { name: '月曜日', isOpen: true },
+                    { name: '火曜日', isOpen: false }, // デフォルトで火曜日は休業
+                    { name: '水曜日', isOpen: true },
+                    { name: '木曜日', isOpen: true },
+                    { name: '金曜日', isOpen: true },
+                    { name: '土曜日', isOpen: true },
+                    { name: '日曜日', isOpen: true }
+                ],
+                businessHours: {
+                    start: '10:00',
+                    end: '19:00'
+                },
+                intervalEnabled: false,
+                enableEarlyBooking: false,
+                earlyBookingMinutes: 20,
+                temporaryClosures: [],
+                newClosureDate: '',
+                newClosureNote: '',
+                clinicInfo: {
+                    category: 'seitai',
+                    name: 'REBO',
+                    nameKana: 'レボ',
+                    email: 'seitai@renipro.jp',
+                    phone: '0120987441',
+                    businessHours: '10:00〜21:00',
+                    logo: null
+                },
+                dashboardLayout: ['recent-reservations', 'treatment-status', 'schedule', 'kpi-cards'],
+                navigationPosition: 'left',
+                
+                init() {
+                    this.loadSettings();
+                    this.loadClinicInfo();
+                    this.loadDashboardLayout();
+                    this.loadNavigationSettings();
+                    this.$nextTick(() => {
+                        this.initDragAndDrop();
+                        // removeWidget から参照できるように公開
+                        window.settingsInstance = this;
+                    });
+                },
+                
+                toggleBusinessDay(index) {
+                    this.weekDays[index].isOpen = !this.weekDays[index].isOpen;
+                    this.saveSettings();
+                },
+                
+                saveSettings() {
+                    const settings = {
+                        weekDays: this.weekDays,
+                        businessHours: this.businessHours,
+                        intervalEnabled: this.intervalEnabled,
+                        enableEarlyBooking: this.enableEarlyBooking,
+                        earlyBookingMinutes: this.earlyBookingMinutes,
+                        temporaryClosures: this.temporaryClosures
+                    };
+                    
+                    try {
+                        localStorage.setItem('businessSettings', JSON.stringify(settings));
+                        console.log('設定を保存しました');
+                    } catch (e) {
+                        console.error('設定の保存に失敗しました:', e);
+                    }
+                },
+                
+                loadSettings() {
+                    try {
+                        const saved = localStorage.getItem('businessSettings');
+                        if (saved) {
+                            const settings = JSON.parse(saved);
+                            this.weekDays = settings.weekDays || this.weekDays;
+                            this.businessHours = settings.businessHours || this.businessHours;
+                            this.intervalEnabled = settings.intervalEnabled || false;
+                            this.enableEarlyBooking = settings.enableEarlyBooking || false;
+                            this.earlyBookingMinutes = settings.earlyBookingMinutes || 20;
+                            this.temporaryClosures = settings.temporaryClosures || [];
+                        }
+                    } catch (e) {
+                        console.error('設定の読み込みに失敗しました:', e);
+                    }
+                },
+
+                todayStr(){
+                    const x = new Date();
+                    const y = x.getFullYear();
+                    const m = String(x.getMonth()+1).padStart(2,'0');
+                    const d = String(x.getDate()).padStart(2,'0');
+                    return `${y}-${m}-${d}`;
+                },
+
+                upcomingClosures(){
+                    const t = this.todayStr();
+                    return (this.temporaryClosures||[])
+                        .filter(c=> (c.date||'') >= t)
+                        .sort((a,b)=> String(a.date).localeCompare(String(b.date), 'ja'));
+                },
+
+                addClosure(){
+                    const d = (this.newClosureDate||'').trim();
+                    if(!d){ alert('日付を選択してください'); return; }
+                    this.temporaryClosures.push({ date: d, note: this.newClosureNote||'' });
+                    this.newClosureDate = '';
+                    this.newClosureNote = '';
+                    this.saveSettings();
+                },
+
+                removeClosureByKey(date, note){
+                    const idx = (this.temporaryClosures||[]).findIndex(x=> x.date===date && (x.note||'')===(note||''));
+                    if(idx>=0){ this.temporaryClosures.splice(idx,1); this.saveSettings(); }
+                },
+                
+                // 店舗情報関連
+                saveClinicInfo() {
+                    try {
+                        localStorage.setItem('clinicInfo', JSON.stringify(this.clinicInfo));
+                        console.log('店舗情報を保存しました');
+                    } catch (e) {
+                        console.error('店舗情報の保存に失敗しました:', e);
+                    }
+                },
+                
+                loadClinicInfo() {
+                    try {
+                        const saved = localStorage.getItem('clinicInfo');
+                        if (saved) {
+                            this.clinicInfo = { ...this.clinicInfo, ...JSON.parse(saved) };
+                        }
+                    } catch (e) {
+                        console.error('店舗情報の読み込みに失敗しました:', e);
+                    }
+                },
+                
+                handleLogoUpload(event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            this.clinicInfo.logo = e.target.result;
+                            this.saveClinicInfo();
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                },
+                
+                // ダッシュボードレイアウト関連
+                saveDashboardLayout() {
+                    try {
+                        localStorage.setItem('dashboardLayout', JSON.stringify(this.dashboardLayout));
+                        console.log('ダッシュボードレイアウトを保存しました');
+                        alert('レイアウトを保存しました');
+                    } catch (e) {
+                        console.error('ダッシュボードレイアウトの保存に失敗しました:', e);
+                    }
+                },
+                
+                loadDashboardLayout() {
+                    try {
+                        const saved = localStorage.getItem('dashboardLayout');
+                        if (saved) {
+                            this.dashboardLayout = JSON.parse(saved);
+                        }
+                        this.renderDashboardLayout();
+                    } catch (e) {
+                        console.error('ダッシュボードレイアウトの読み込みに失敗しました:', e);
+                    }
+                },
+                
+                resetDashboardLayout() {
+                    this.dashboardLayout = ['recent-reservations', 'treatment-status', 'schedule', 'kpi-cards'];
+                    this.renderDashboardLayout();
+                },
+                
+                renderDashboardLayout() {
+                    const container = document.getElementById('dashboardLayout');
+                    const emptyMessage = document.getElementById('emptyMessage');
+                    
+                    if (!container) return;
+                    
+                    if (this.dashboardLayout.length === 0) {
+                        emptyMessage.style.display = 'block';
+                        return;
+                    }
+                    
+                    emptyMessage.style.display = 'none';
+                    
+                    const widgetNames = {
+                        'recent-reservations': '直近の予約',
+                        'treatment-status': '施術中',
+                        'kpi-cards': 'KPIカード',
+                        'schedule': '本日のスケジュール'
+                    };
+                    
+                    const widgetIcons = {
+                        'recent-reservations': 'fas fa-clock',
+                        'treatment-status': 'fas fa-user-md',
+                        'kpi-cards': 'fas fa-chart-bar',
+                        'schedule': 'fas fa-calendar-day'
+                    };
+                    
+                    container.innerHTML = this.dashboardLayout.map((widget, index) => `
+                        <div class="widget-item bg-base-200 p-3 rounded-lg cursor-move mb-2 flex items-center justify-between" 
+                             draggable="true" data-widget="${widget}">
+                            <div class="flex items-center">
+                                <i class="${widgetIcons[widget]} mr-2"></i>
+                                ${widgetNames[widget]}
+                            </div>
+                            <button class="btn btn-xs btn-ghost" onclick="removeWidget('${widget}')">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    `).join('');
+                },
+                
+                initDragAndDrop() {
+                    const availableWidgets = document.getElementById('availableWidgets');
+                    const dashboardLayout = document.getElementById('dashboardLayout');
+                    
+                    if (!availableWidgets || !dashboardLayout) return;
+                        
+                        // 利用可能なウィジェットのドラッグ開始
+                        availableWidgets.addEventListener('dragstart', (e) => {
+                            const item = e.target.closest('.widget-item');
+                            if(!item) return;
+                            e.dataTransfer.setData('text/plain', item.dataset.widget);
+                            e.dataTransfer.effectAllowed = 'move';
+                            item.style.opacity = '0.5';
+                        });
+                        
+                        availableWidgets.addEventListener('dragend', (e) => {
+                            const item = e.target.closest('.widget-item');
+                            if(item) item.style.opacity = '1';
+                        });
+                        
+                        // ダッシュボードレイアウトのドロップ
+                        dashboardLayout.addEventListener('dragover', (e) => {
+                            e.preventDefault();
+                            dashboardLayout.classList.add('border-primary');
+                        });
+                        
+                        dashboardLayout.addEventListener('dragleave', (e) => {
+                            dashboardLayout.classList.remove('border-primary');
+                        });
+                        
+                        dashboardLayout.addEventListener('drop', (e) => {
+                            e.preventDefault();
+                            dashboardLayout.classList.remove('border-primary');
+                            const widget = e.dataTransfer.getData('text/plain');
+                            // 既存ウィジェットの並べ替え: DOM順をそのまま保存
+                            const dragging = dashboardLayout.querySelector('.dragging');
+                            if (dragging) {
+                                dragging.classList.remove('dragging');
+                                this.dashboardLayout = Array.from(dashboardLayout.querySelectorAll('.widget-item')).map(el=>el.dataset.widget);
+                                return;
+                            }
+                            // 利用可能ウィジェットからの追加: ドロップ位置へ挿入
+                            if (widget && !this.dashboardLayout.includes(widget)) {
+                                const afterElement = getDragAfterElement(dashboardLayout, e.clientY);
+                                const order = Array.from(dashboardLayout.querySelectorAll('.widget-item')).map(el=>el.dataset.widget);
+                                const insertIndex = afterElement ? order.indexOf(afterElement.dataset.widget) + 1 : 0;
+                                order.splice(insertIndex, 0, widget);
+                                this.dashboardLayout = order;
+                                this.renderDashboardLayout();
+                            }
+                        });
+                        
+                        // 既存ウィジェットの並び替え
+                        dashboardLayout.addEventListener('dragstart', (e) => {
+                            const item = e.target.closest('.widget-item');
+                            if (!item) return;
+                            e.dataTransfer.setData('text/plain', item.dataset.widget);
+                            e.dataTransfer.effectAllowed = 'move';
+                            item.style.opacity = '0.5';
+                            item.classList.add('dragging');
+                        });
+                        dashboardLayout.addEventListener('dragend', (e) => {
+                            const item = e.target.closest('.widget-item');
+                            if (!item) return;
+                            item.style.opacity = '1';
+                            item.classList.remove('dragging');
+                            // 並び替え結果を反映（保存はボタン押下時）
+                            this.dashboardLayout = Array.from(dashboardLayout.querySelectorAll('.widget-item')).map(el=>el.dataset.widget);
+                        });
+                        
+                        dashboardLayout.addEventListener('dragover', (e) => {
+                            e.preventDefault();
+                            const afterElement = getDragAfterElement(dashboardLayout, e.clientY);
+                            const dragging = dashboardLayout.querySelector('.dragging');
+                            if(!dragging) return;
+                            if (afterElement == null) {
+                                dashboardLayout.appendChild(dragging);
+                            } else {
+                                dashboardLayout.insertBefore(dragging, afterElement);
+                            }
+                        });
+                },
+                
+                // ナビゲーション設定関連
+                setNavigationPosition(position) {
+                    this.navigationPosition = position;
+                },
+                
+                saveNavigationSettings() {
+                    try {
+                        localStorage.setItem('navigationPosition', this.navigationPosition);
+                        console.log('ナビゲーション設定を保存しました');
+                        alert('ナビゲーション設定を保存しました。ページを再読み込みすると反映されます。');
+                    } catch (e) {
+                        console.error('ナビゲーション設定の保存に失敗しました:', e);
+                    }
+                },
+                
+                loadNavigationSettings() {
+                    try {
+                        const saved = localStorage.getItem('navigationPosition');
+                        if (saved) {
+                            this.navigationPosition = saved;
+                        }
+                    } catch (e) {
+                        console.error('ナビゲーション設定の読み込みに失敗しました:', e);
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <script>
+        // ハッシュ遷移で該当アコーディオンを自動で開く
+        (function(){
+            function openByHash(){
+                var hash = location.hash || '';
+                if(!hash) return;
+                // 親のアコーディオンを開く
+                var parent = document.querySelector('#sec-clinic input[type="checkbox"]');
+                if(parent){ parent.checked = true; }
+                // スクロール
+                var target = document.querySelector(hash);
+                if(target){ target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+            }
+            window.addEventListener('hashchange', openByHash);
+            document.addEventListener('DOMContentLoaded', openByHash);
+        })();
+        // ドラッグ&ドロップのヘルパー関数
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.widget-item:not(.dragging)')];
+            
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+        
+        // ウィジェット削除関数
+        function removeWidget(widget) {
+            const settings = Alpine.store('settings') || window.settingsInstance;
+            if (settings) {
+                const index = settings.dashboardLayout.indexOf(widget);
+                if (index > -1) {
+                    settings.dashboardLayout.splice(index, 1);
+                    settings.renderDashboardLayout();
+                }
+            }
+        }
+        
+        // グローバルにアクセス可能にする
+        window.removeWidget = removeWidget;
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+

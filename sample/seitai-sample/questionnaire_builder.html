@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>問診票ビルダー</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.20/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .menu li > a.menu-active { background-color: rgb(59 130 246 / 0.1) !important; color: rgb(59 130 246) !important; border-right: 2px solid rgb(59 130 246); font-weight: 600; }
+        .menu li > a:hover:not(.menu-active) { background-color: rgb(0 0 0 / 0.05); }
+    </style>
+</head>
+<body class="bg-base-200 min-h-screen">
+    <div class="drawer lg:drawer-open">
+        <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-side">
+            <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
+            <aside class="min-h-full w-64 bg-base-100 shadow-lg relative">
+                <div id="sidebar-slot"></div>
+            </aside>
+        </div>
+        <div class="drawer-content">
+            <div class="navbar bg-base-100 shadow-sm lg:hidden">
+                <div class="navbar-start">
+                    <label for="drawer-toggle" class="btn btn-square btn-ghost">
+                        <i class="fas fa-bars text-xl"></i>
+                    </label>
+                </div>
+                <div class="navbar-center">
+                    <span class="text-lg font-semibold">問診票ビルダー</span>
+                </div>
+            </div>
+            <div class="p-4 lg:p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <a class="btn btn-ghost btn-sm" href="questionnaires.html"><i class="fas fa-arrow-left mr-1"></i> 戻る</a>
+                    <h1 class="text-2xl font-bold">問診票ビルダー</h1>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div class="card bg-base-100 shadow-sm">
+                        <div class="card-body p-4">
+                            <h3 class="font-semibold mb-2">項目を追加</h3>
+                            <div class="space-y-2 text-sm">
+                                <button class="btn btn-sm w-full" onclick="addField('text')"><i class="fas fa-font mr-1"></i>短文テキスト</button>
+                                <button class="btn btn-sm w-full" onclick="addField('textarea')"><i class="fas fa-align-left mr-1"></i>長文テキスト</button>
+                                <button class="btn btn-sm w-full" onclick="addField('radio')"><i class="fas fa-dot-circle mr-1"></i>単一選択</button>
+                                <button class="btn btn-sm w-full" onclick="addField('checkbox')"><i class="fas fa-check-square mr-1"></i>複数選択</button>
+                                <button class="btn btn-sm w-full" onclick="addField('select')"><i class="fas fa-caret-square-down mr-1"></i>プルダウン</button>
+                                <button class="btn btn-sm w-full" onclick="addField('pain')"><i class="fas fa-thermometer-half mr-1"></i>痛みスケール(1-10)</button>
+                                <button class="btn btn-sm w-full" onclick="addField('bodymap')"><i class="fas fa-user mr-1"></i>人体クリック</button>
+                                <button class="btn btn-sm w-full" onclick="addField('date')"><i class="fas fa-calendar-day mr-1"></i>日付</button>
+                                <button class="btn btn-sm w-full" onclick="addField('phone')"><i class="fas fa-phone mr-1"></i>電話番号</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card bg-base-100 shadow-sm lg:col-span-2">
+                        <div class="card-body p-4">
+                            <h3 class="font-semibold mb-2">プレビュー</h3>
+                            <div id="builderPreview" class="space-y-3"></div>
+                            <div class="divider"></div>
+                            <div class="flex justify-end gap-2">
+                                <button class="btn" onclick="saveBuilderDraft()"><i class="fas fa-save mr-1"></i>下書き保存</button>
+                                <button class="btn btn-primary" onclick="publishQuestionnaire()"><i class="fas fa-cloud-upload-alt mr-1"></i>公開</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/common.js"></script>
+    <script>
+        function escapeHtml(str){ return String(str||'').replace(/[&<>"]+/g, s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[s])); }
+        function defaultLabel(type){ switch(type){ case 'text':return 'テキスト'; case 'textarea':return '自由記述'; case 'radio':return '単一選択'; case 'checkbox':return '複数選択'; case 'select':return 'プルダウン'; case 'pain':return '痛みの強さ'; case 'bodymap':return '人体クリック'; case 'date':return '日付'; case 'phone':return '電話番号'; default:return '項目'; } }
+        function uniqueKey(type){ const base = `f_${type}_` + Math.random().toString(36).slice(2,7); return base; }
+
+        function buildFieldEditor(field, index){ const wrap=document.createElement('div'); wrap.className='p-3 rounded border border-base-300'; wrap.innerHTML = `<div class="flex justify-between items-center mb-2"><div class="font-semibold">${escapeHtml(field.label||'未設定')} <span class="text-xs text-base-content/60">(${field.type})</span></div><div class="flex gap-2"><button class="btn btn-xs" type="button" data-action="edit">編集</button><button class="btn btn-xs btn-error btn-outline" type="button" data-action="delete">削除</button></div></div><div class="text-sm text-base-content/70">キー: ${field.key||'-'}</div>`; wrap.querySelector('[data-action="edit"]').onclick=()=>openFieldModal(field,index); wrap.querySelector('[data-action="delete"]').onclick=()=>removeField(index); return wrap; }
+        function renderBuilder(schema){ const preview=document.getElementById('builderPreview'); if(!preview) return; preview.innerHTML=''; schema.forEach((f,i)=> preview.appendChild(buildFieldEditor(f,i)) ); preview.dataset.schema=JSON.stringify(schema); }
+        function addField(type){ const preview=document.getElementById('builderPreview'); const schema=JSON.parse(preview.dataset.schema||'[]'); const f={type, label:defaultLabel(type), key:uniqueKey(type)}; if(['radio','checkbox','select'].includes(type)) f.options=['選択肢1','選択肢2']; schema.push(f); renderBuilder(schema); }
+        function removeField(index){ const preview=document.getElementById('builderPreview'); const schema=JSON.parse(preview.dataset.schema||'[]'); schema.splice(index,1); renderBuilder(schema); }
+        function openFieldModal(field,index){ const label=prompt('項目名を入力してください', field.label||''); if(label===null) return; field.label=label.trim(); if(['radio','checkbox','select'].includes(field.type)){ const opts=prompt('選択肢（カンマ区切り）', (field.options||[]).join(',')); if(opts!==null){ field.options=opts.split(',').map(s=>s.trim()).filter(Boolean); } } const key=prompt('保存用キー（半角英数・空白不可）', field.key||uniqueKey(field.type)); if(key!==null && key.trim()){ field.key=key.trim(); } const preview=document.getElementById('builderPreview'); const schema=JSON.parse(preview.dataset.schema||'[]'); schema[index]=field; renderBuilder(schema); }
+        function saveBuilderDraft(){ const preview=document.getElementById('builderPreview'); const schema=JSON.parse(preview.dataset.schema||'[]'); localStorage.setItem('qn_builder_draft', JSON.stringify(schema)); alert('下書きを保存しました'); }
+        function publishQuestionnaire(){ const preview=document.getElementById('builderPreview'); const schema=JSON.parse(preview.dataset.schema||'[]'); let list=[]; try{ list=JSON.parse(localStorage.getItem('questionnaires')||'[]'); }catch{} const id=Date.now(); const name=prompt('問診票のタイトルを入力してください','新しい問診票'); const purpose='custom'; const url=`https://carecle.com/questionnaire/new?clinic_id=1794&purpose=custom_${id}`; list.push({id, name:(name||'新しい問診票'), purpose, url, schema}); localStorage.setItem('questionnaires', JSON.stringify(list)); localStorage.removeItem('qn_builder_draft'); alert('公開しました。問診票一覧に追加されました'); location.href='questionnaires.html'; }
+        (function init(){ let draft=null; try{ draft=JSON.parse(localStorage.getItem('qn_builder_draft')||'null'); }catch{} if(draft){ renderBuilder(draft); } else { renderBuilder([{type:'text',label:'お名前',required:true,key:'name'},{type:'phone',label:'電話番号',required:false,key:'phone'},{type:'radio',label:'性別',options:['男性','女性','回答しない','その他'],key:'gender'},{type:'checkbox',label:'現在の症状',options:['肩こり','腰痛','頭痛','膝痛','しびれ','その他'],key:'symptoms'},{type:'pain',label:'痛みの強さ',key:'pain'},{type:'bodymap',label:'症状の出ている箇所',key:'body_positions'},{type:'textarea',label:'気になること・メモ',key:'note'}]); } })();
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

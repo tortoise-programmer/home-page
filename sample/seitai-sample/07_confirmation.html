@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>内容確認 - ウェブ予約</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.20/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-base-200 p-4">
+    <div class="container mx-auto max-w-md">
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h1 class="card-title text-xl font-bold text-center justify-center mb-6">内容確認</h1>
+
+                <!-- ステップフロー -->
+                <div id="steps" class="steps steps-horizontal w-full mb-8">
+                    <div class="step step-primary">予約内容</div>
+                    <div class="step step-primary">予約日時</div>
+                    <div class="step step-primary">内容確認</div>
+                </div>
+                
+                <!-- 戻るボタン -->
+                <div class="flex justify-start mb-4">
+                    <a id="back-link" href="05_date_selection.html" class="btn btn-ghost btn-sm">← 戻る</a>
+                </div>
+                
+                <p class="text-center mb-6 text-base-content/70">
+                    以下の内容で予約を確定します。<br>
+                    内容をご確認ください。
+                </p>
+                
+                <!-- 予約内容 -->
+                <div class="card bg-base-200 mb-6">
+                    <div class="card-body p-4">
+                        <h2 class="card-title text-base mb-4">予約内容</h2>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-base-content/70">コース:</span>
+                                <span class="font-medium">整体・鍼灸</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-base-content/70">メニュー:</span>
+                                <span class="font-medium">全身整体コース</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-base-content/70">時間:</span>
+                                <span class="font-medium">60分</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-base-content/70">金額:</span>
+                                <span class="font-medium text-primary">6,000円</span>
+                            </div>
+                            <div class="divider my-2"></div>
+                            <div class="flex justify-between">
+                                <span class="text-base-content/70">予約日時:</span>
+                                <span class="font-medium">2024年1月15日（月）<br>10:00〜11:00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- お客様情報 -->
+                <div class="card bg-base-200 mb-6">
+                    <div class="card-body p-4">
+                        <h2 class="card-title text-base mb-4">お客様情報</h2>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-base-content/70">氏名:</span>
+                                <span class="font-medium">山田太郎</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-base-content/70">ふりがな:</span>
+                                <span class="font-medium">やまだたろう</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-base-content/70">メールアドレス:</span>
+                                <span class="font-medium">yamada@example.com</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-base-content/70">携帯電話:</span>
+                                <span class="font-medium">090-1234-5678</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-base-content/70">生年月日:</span>
+                                <span class="font-medium">1990年1月1日</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-base-content/70">性別:</span>
+                                <span class="font-medium">男性</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 注意事項 -->
+                <div class="alert alert-info mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <div>
+                        <p class="text-xs">
+                            予約確定後、確認メールをお送りします。<br>
+                            キャンセルは前日までにご連絡ください。
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    <button class="btn btn-primary btn-lg w-full" onclick="confirmReservation()">
+                        予約を確定する
+                    </button>
+                    <a id="edit-link" href="05_date_selection.html" class="btn btn-ghost w-full">修正する</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function loadReservationData() {
+            try {
+                const date = sessionStorage.getItem('selectedDate') || '';
+                const time = sessionStorage.getItem('selectedTime') || '';
+                const plan = sessionStorage.getItem('selectedPlan') || '';
+                const service = sessionStorage.getItem('selectedService') || '';
+                const serviceForPlan = sessionStorage.getItem('selectedServiceForPlan') || '';
+                const customerName = sessionStorage.getItem('customerName') || '山田太郎';
+                const customerKana = sessionStorage.getItem('customerKana') || 'やまだたろう';
+                const email = sessionStorage.getItem('email') || 'yamada@example.com';
+                const phone = sessionStorage.getItem('phone') || '090-1234-5678';
+                const birthDate = sessionStorage.getItem('birthDate') || '1990年1月1日';
+                const gender = sessionStorage.getItem('gender') || '男性';
+                
+                // プラン名の変換
+                const planNames = {
+                    'planA': 'プランA（30分）',
+                    'planB': 'プランB（60分）',
+                    'planC': 'プランC（90分）',
+                    'planD': 'プランD（120分）',
+                    'planE': 'プランE（180分）'
+                };
+                
+                // サービス名の変換
+                const serviceNames = {
+                    'acupuncture': '鍼',
+                    'moxibustion': '灸',
+                    'seitai': '整体'
+                };
+                
+                // 金額の計算（簡易版）
+                const planPrices = {
+                    'planA': 3500,
+                    'planB': 6000,
+                    'planC': 9000,
+                    'planD': 12000,
+                    'planE': 15000
+                };
+                
+                const basePrice = planPrices[plan] || 6000;
+                const tax = Math.round(basePrice * 0.1);
+                const totalPrice = basePrice + tax;
+                
+                // 表示を更新
+                document.querySelector('.card-body .space-y-3 .flex:first-child span:last-child').textContent = serviceNames[service] || '整体・鍼灸';
+                document.querySelector('.card-body .space-y-3 .flex:nth-child(2) span:last-child').textContent = planNames[plan] || '全身整体コース';
+                document.querySelector('.card-body .space-y-3 .flex:nth-child(3) span:last-child').textContent = (plan === 'planA' ? '30' : plan === 'planB' ? '60' : plan === 'planC' ? '90' : plan === 'planD' ? '120' : '180') + '分';
+                document.querySelector('.card-body .space-y-3 .flex:nth-child(4) span:last-child').textContent = totalPrice.toLocaleString() + '円';
+                
+                if (date && time) {
+                    const dateObj = new Date(date);
+                    const month = dateObj.getMonth() + 1;
+                    const day = dateObj.getDate();
+                    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+                    const weekday = weekdays[dateObj.getDay()];
+                    document.querySelector('.card-body .space-y-3 .flex:last-child span:last-child').innerHTML = `${dateObj.getFullYear()}年${month}月${day}日（${weekday}）<br>${time}〜`;
+                }
+                
+                // お客様情報の更新
+                const customerInfo = document.querySelectorAll('.card.bg-base-200:nth-child(2) .space-y-3 .flex');
+                if (customerInfo.length >= 6) {
+                    customerInfo[0].querySelector('span:last-child').textContent = customerName;
+                    customerInfo[1].querySelector('span:last-child').textContent = customerKana;
+                    customerInfo[2].querySelector('span:last-child').textContent = email;
+                    customerInfo[3].querySelector('span:last-child').textContent = phone;
+                    customerInfo[4].querySelector('span:last-child').textContent = birthDate;
+                    customerInfo[5].querySelector('span:last-child').textContent = gender;
+                }
+                
+            } catch (e) {
+                console.error('予約データの読み込みに失敗しました:', e);
+            }
+        }
+        
+        function confirmReservation() {
+            try {
+                const date = sessionStorage.getItem('selectedDate') || '';
+                const time = sessionStorage.getItem('selectedTime') || '';
+                const plan = sessionStorage.getItem('selectedPlan') || '';
+                const service = sessionStorage.getItem('selectedService') || '';
+                const serviceForPlan = sessionStorage.getItem('selectedServiceForPlan') || '';
+                const customerName = sessionStorage.getItem('customerName') || '山田太郎';
+                const phone = sessionStorage.getItem('phone') || '090-1234-5678';
+                
+                if (!date || !time || !plan) {
+                    alert('予約情報が不完全です。');
+                    return;
+                }
+                
+                // プラン名の変換
+                const planNames = {
+                    'planA': 'プランA（30分）',
+                    'planB': 'プランB（60分）',
+                    'planC': 'プランC（90分）',
+                    'planD': 'プランD（120分）',
+                    'planE': 'プランE（180分）'
+                };
+                
+                // 金額の計算
+                const planPrices = {
+                    'planA': 3500,
+                    'planB': 6000,
+                    'planC': 9000,
+                    'planD': 12000,
+                    'planE': 15000
+                };
+                
+                const basePrice = planPrices[plan] || 6000;
+                const tax = Math.round(basePrice * 0.1);
+                const totalPrice = basePrice + tax;
+                
+                // 所要時間の計算
+                const durations = {
+                    'planA': 30,
+                    'planB': 60,
+                    'planC': 90,
+                    'planD': 120,
+                    'planE': 180
+                };
+                
+                const duration = durations[plan] || 60;
+                
+                // localStorageに予約データを保存
+                const reservationData = {
+                    date: date,
+                    time: time,
+                    customerName: customerName,
+                    phone: phone,
+                    menu: planNames[plan] || '全身整体コース',
+                    service: service,
+                    serviceForPlan: serviceForPlan,
+                    duration: duration,
+                    price: totalPrice,
+                    basePrice: basePrice,
+                    tax: tax,
+                    staff: 'tanaka', // デフォルト担当者
+                    notes: 'ウェブ予約',
+                    created: new Date().toISOString()
+                };
+                
+                const key = `schedule_${date}_${time}`;
+                localStorage.setItem(key, JSON.stringify(reservationData));
+                
+                // 受付画面に通知を送る（リアルタイム更新のため）
+                const notificationData = {
+                    type: 'new_reservation',
+                    reservation: reservationData,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem('reservation_notification', JSON.stringify(notificationData));
+                
+                // 完了ページへ遷移
+                window.location.href = '07_complete.html';
+                
+            } catch (e) {
+                console.error('予約の確定に失敗しました:', e);
+                alert('予約の確定に失敗しました。もう一度お試しください。');
+            }
+        }
+        
+        // ページ読み込み時に予約データを表示
+        document.addEventListener('DOMContentLoaded', loadReservationData);
+        
+        (function(){
+            try{
+                var params = new URLSearchParams(location.search);
+                var type = params.get('type') || (function(){ try{return sessionStorage.getItem('visitType')||''}catch(e){return ''} })();
+                if(type === 'first'){
+                    var steps = document.getElementById('steps');
+                    if(steps){
+                        steps.innerHTML = ''+
+                          '<div class="step step-primary">予約内容</div>'+
+                          '<div class="step step-primary">予約日時</div>'+
+                          '<div class="step">予約者情報</div>'+
+                          '<div class="step step-primary">内容確認</div>';
+                    }
+                }
+                var back = document.getElementById('back-link');
+                var edit = document.getElementById('edit-link');
+                ['back-link','edit-link'].forEach(function(id){
+                    var el = document.getElementById(id);
+                    if(el){
+                        var url = new URL(el.getAttribute('href'), location.href);
+                        if(type){ url.searchParams.set('type', type); }
+                        el.setAttribute('href', url.pathname + url.search);
+                    }
+                });
+            }catch(e){ console.error(e); }
+        })();
+    </script>
+</body>
+</html>

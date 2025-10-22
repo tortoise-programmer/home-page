@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>問診票一覧</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.20/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .menu li > a.menu-active { background-color: rgb(59 130 246 / 0.1) !important; color: rgb(59 130 246) !important; border-right: 2px solid rgb(59 130 246); font-weight: 600; }
+        .menu li > a:hover:not(.menu-active) { background-color: rgb(0 0 0 / 0.05); }
+    </style>
+</head>
+<body class="bg-base-200 min-h-screen">
+    <div class="drawer lg:drawer-open">
+        <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-side">
+            <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
+            <aside class="min-h-full w-64 bg-base-100 shadow-lg relative">
+                <div id="sidebar-slot"></div>
+            </aside>
+        </div>
+        <div class="drawer-content">
+            <div class="navbar bg-base-100 shadow-sm lg:hidden">
+                <div class="navbar-start">
+                    <label for="drawer-toggle" class="btn btn-square btn-ghost">
+                        <i class="fas fa-bars text-xl"></i>
+                    </label>
+                </div>
+                <div class="navbar-center">
+                    <span class="text-lg font-semibold">問診票一覧</span>
+                </div>
+            </div>
+            <div class="p-4 lg:p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h1 class="text-2xl font-bold">問診票一覧</h1>
+                    <div class="flex items-center gap-2">
+                        <a class="btn btn-primary btn-sm" href="questionnaire_builder.html"><i class="fas fa-plus mr-1"></i>新規問診票を作成</a>
+                        <button class="btn btn-ghost btn-sm"><i class="fas fa-cog mr-1"></i>設定</button>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body">
+                        <h2 class="card-title">問診票 一覧</h2>
+                        <div class="overflow-x-auto">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th class="w-16">NO</th>
+                                        <th>問診票名</th>
+                                        <th>URL</th>
+                                        <th class="w-40">QRコード</th>
+                                        <th class="w-28"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="questionnaireTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/common.js"></script>
+    <script>
+        function getQuestionnaires(){ try{ return JSON.parse(localStorage.getItem('questionnaires')||'[]'); }catch{return []} }
+        function setQuestionnaires(v){ localStorage.setItem('questionnaires', JSON.stringify(v)); }
+        function renderQuestionnaires(){ const tbody=document.getElementById('questionnaireTableBody'); if(!tbody) return; let data=getQuestionnaires(); if(data.length===0){ data=[ { id:1, name:'痛み・しびれのケア', purpose:'numbness_care', url:'https://carecle.com/questionnaire/new?clinic_id=1794&purpose=numbness_care' }, { id:2, name:'交通事故後治療', purpose:'accident_treatment', url:'https://carecle.com/questionnaire/new?clinic_id=1794&purpose=accident_treatment' }, { id:3, name:'一般鍼灸治療', purpose:'general_acupuncture', url:'https://carecle.com/questionnaire/new?clinic_id=1794&purpose=general_acupuncture' }, { id:4, name:'美容鍼灸', purpose:'beauty_eyebrow', url:'https://carecle.com/questionnaire/new?clinic_id=1794&purpose=beauty_eyebrow' } ]; setQuestionnaires(data); }
+            tbody.innerHTML = data.map((q,i)=>`<tr><td>${i+1}</td><td>${q.name}</td><td><div class=\"flex items-center gap-2\"><span class=\"truncate max-w-[420px] text-sm\">${q.url}</span><button class=\"btn btn-xs\" onclick=\"navigator.clipboard.writeText('${q.url}')\">URLをコピー</button></div></td><td><img class=\"w-24 h-24 object-contain\" alt=\"QR\" src=\"https://quickchart.io/qr?size=120&text=${encodeURIComponent('https://tortoise-programmer.com/')}\" /></td><td><a class=\"btn btn-outline btn-xs\" href=\"questionnaire_detail.html?id=${q.id}\">詳細を見る</a></td></tr>`).join(''); }
+        document.addEventListener('DOMContentLoaded', renderQuestionnaires);
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

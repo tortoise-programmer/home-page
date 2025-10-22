@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>顧客管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.20/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .menu li > a.menu-active { background-color: rgb(59 130 246 / 0.1) !important; color: rgb(59 130 246) !important; border-right: 2px solid rgb(59 130 246); font-weight: 600; }
+        .menu li > a:hover:not(.menu-active) { background-color: rgb(0 0 0 / 0.05); }
+        .table thead th { position: sticky; top: 0; z-index: 1; }
+    </style>
+    <script>
+        // 画面内で使用する簡易ユーティリティ
+        function formatDate(d){ const x=(d instanceof Date)?d:new Date(d); const y=x.getFullYear(); const m=String(x.getMonth()+1).padStart(2,'0'); const day=String(x.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+    </script>
+</head>
+<body class="bg-base-200 min-h-screen">
+    <div class="drawer lg:drawer-open">
+        <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-side">
+            <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
+            <aside class="min-h-full w-64 bg-base-100 shadow-lg relative">
+                <div id="sidebar-slot"></div>
+            </aside>
+        </div>
+        <div class="drawer-content">
+            <div class="navbar bg-base-100 shadow-sm lg:hidden">
+                <div class="navbar-start">
+                    <label for="drawer-toggle" class="btn btn-square btn-ghost"><i class="fas fa-bars text-xl"></i></label>
+                </div>
+                <div class="navbar-center">
+                    <span class="text-lg font-semibold">顧客管理</span>
+                </div>
+            </div>
+
+            <div class="p-4 lg:p-6">
+                <div class="flex flex-col lg:flex-row lg:items-end gap-4 mb-4">
+                    <div class="flex-1">
+                        <h1 class="text-2xl font-bold">顧客管理</h1>
+                        <div class="text-sm text-base-content/70">基本操作: 検索 → 行をクリックで編集 → 保存</div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn btn-success btn-sm" id="btnNew"><i class="fas fa-user-plus mr-1"></i>新規登録</button>
+                        <button class="btn btn-info btn-sm" id="btnExport"><i class="fas fa-file-export mr-1"></i>CSVエクスポート</button>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">氏名で検索</span></label>
+                                <input id="qName" type="text" class="input input-bordered" placeholder="例: 田中 太郎" />
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">電話番号で検索</span></label>
+                                <input id="qTel" type="text" class="input input-bordered" placeholder="例: 0901234" />
+                            </div>
+                            
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">性別</span></label>
+                                <select id="gender" class="select select-bordered">
+                                    <option value="">すべて</option>
+                                    <option value="male">男性</option>
+                                    <option value="female">女性</option>
+                                    <option value="other">その他</option>
+                                </select>
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">年齢（以上）</span></label>
+                                <input id="qAgeMin" type="number" class="input input-bordered" placeholder="20" />
+                            </div>
+                            <div class="form-control">
+                                <label class="label"><span class="label-text">表示件数</span></label>
+                                <select id="limit" class="select select-bordered">
+                                    <option>10</option>
+                                    <option selected>20</option>
+                                    <option>50</option>
+                                    <option>100</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body p-0">
+                        <div class="overflow-x-auto">
+                            <table class="table table-zebra table-fixed">
+                                <thead class="bg-base-200">
+                                    <tr>
+                                        <th class="w-16 cursor-pointer" data-sort="id">ID <i class="fas fa-sort ml-1 opacity-60"></i></th>
+                                        <th class="cursor-pointer" data-sort="name">氏名 <i class="fas fa-sort ml-1 opacity-60"></i></th>
+                                        <th class="cursor-pointer" data-sort="tel">電話 <i class="fas fa-sort ml-1 opacity-60"></i></th>
+                                        <th class="hidden xl:table-cell cursor-pointer" data-sort="birthday">生年月日 <i class="fas fa-sort ml-1 opacity-60"></i></th>
+                                        <th class="hidden lg:table-cell cursor-pointer" data-sort="last">最終来店 <i class="fas fa-sort ml-1 opacity-60"></i></th>
+                                        <th class="w-24 cursor-pointer" data-sort="visits">回数 <i class="fas fa-sort ml-1 opacity-60"></i></th>
+                                        <th class="hidden xl:table-cell">検索KW</th>
+                                        <th class="hidden xl:table-cell">メモ</th>
+                                        <th class="hidden xl:table-cell">回数券</th>
+                                        <th class="w-24 text-center">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="listBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="p-3 flex items-center justify-between gap-2">
+                            <div class="text-sm" id="resultText"></div>
+                            <div class="join">
+                                <button class="join-item btn btn-sm" id="prev">前へ</button>
+                                <input class="join-item input input-bordered input-sm w-16 text-center" id="page" value="1" />
+                                <button class="join-item btn btn-sm" id="next">次へ</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <dialog id="editModal" class="modal">
+        <div class="modal-box w-11/12 max-w-2xl">
+            <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+            <h3 class="font-bold text-lg mb-4"><i class="fas fa-user-edit mr-2 text-primary"></i>顧客情報</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="form-control">
+                    <label class="label"><span class="label-text">氏名</span></label>
+                    <input id="f_name" type="text" class="input input-bordered" placeholder="山田 太郎" />
+                </div>
+                <div class="form-control">
+                    <label class="label"><span class="label-text">電話番号</span></label>
+                    <input id="f_tel" type="tel" class="input input-bordered" placeholder="09012345678" />
+                </div>
+                <div class="form-control">
+                    <label class="label"><span class="label-text">メール</span></label>
+                    <input id="f_email" type="email" class="input input-bordered" placeholder="example@mail.com" />
+                </div>
+                <div class="form-control">
+                    <label class="label"><span class="label-text">性別</span></label>
+                    <select id="f_gender" class="select select-bordered"><option value="">未選択</option><option value="male">男性</option><option value="female">女性</option><option value="other">その他</option></select>
+                </div>
+                <div class="form-control md:col-span-2">
+                    <label class="label"><span class="label-text">住所</span></label>
+                    <input id="f_address" type="text" class="input input-bordered" placeholder="都道府県 市区町村 番地 建物名" />
+                </div>
+                <div class="form-control">
+                    <label class="label"><span class="label-text">生年月日</span></label>
+                    <input id="f_birthday" type="date" class="input input-bordered" />
+                </div>
+                <div class="form-control">
+                    <label class="label"><span class="label-text">検索キーワード</span></label>
+                    <input id="f_keywords" type="text" class="input input-bordered" placeholder="#肩こり #腰痛 など" />
+                </div>
+                <div class="form-control md:col-span-2">
+                    <label class="label"><span class="label-text">メモ</span></label>
+                    <textarea id="f_note" class="textarea textarea-bordered" placeholder="注意点や好みなど"></textarea>
+                </div>
+                
+            </div>
+            <div class="modal-action">
+                <form method="dialog" class="flex gap-2">
+                    <button class="btn btn-ghost">キャンセル</button>
+                    <button id="btnDelete" type="button" class="btn btn-error btn-outline"><i class="fas fa-trash mr-1"></i>削除</button>
+                    <button id="btnSave" type="button" class="btn btn-primary"><i class="fas fa-save mr-1"></i>保存</button>
+                </form>
+            </div>
+        </div>
+    </dialog>
+
+    <script src="assets/common.js"></script>
+    <script>
+        // データスキーマ: { id, name, tel, gender, email, address, birthday, keywords, note, ticket, updatedAt }
+        function loadCustomers(){ try{ const raw=localStorage.getItem('customers'); return raw?JSON.parse(raw):[]; }catch{return []} }
+        function saveCustomers(list){ try{ localStorage.setItem('customers', JSON.stringify(list)); }catch{} }
+        function upsertCustomer(record){ const list=loadCustomers(); const idx=list.findIndex(x=> String(x.id)===String(record.id)); if(idx>=0){ list[idx]=record; } else { list.push(record); } saveCustomers(list); }
+        function deleteCustomer(id){ const list=loadCustomers().filter(x=> String(x.id)!==String(id)); saveCustomers(list); }
+
+        function buildVisitStats(){ const stats={}; Object.keys(localStorage).forEach(k=>{ if(!k.startsWith('schedule_')) return; try{ const v=JSON.parse(localStorage.getItem(k)); if(!v || !v.customerName) return; const name=(v.customerName||'').trim(); const date=v.date; if(!name||!date) return; if(!stats[name]) stats[name]={ count:0, last: date }; stats[name].count+=1; if(stats[name].last<date) stats[name].last=date; }catch{} }); return stats; }
+
+        const state={ page:1, limit:20, qName:'', qTel:'', sortKey:'updatedAt', sortDir:'desc', gender:'', ageMin:'' };
+        const els={ body:null, qName:null, qTel:null, gender:null, qAgeMin:null, limit:null, page:null, prev:null, next:null, result:null, head:null };
+        let currentEditId=null;
+
+        document.addEventListener('DOMContentLoaded', function(){
+            els.body=document.getElementById('listBody');
+            els.qName=document.getElementById('qName');
+            els.qTel=document.getElementById('qTel');
+            els.gender=document.getElementById('gender');
+            els.limit=document.getElementById('limit');
+            els.qAgeMin=document.getElementById('qAgeMin');
+            els.page=document.getElementById('page');
+            els.prev=document.getElementById('prev');
+            els.next=document.getElementById('next');
+            els.result=document.getElementById('resultText');
+            els.head=document.querySelector('thead tr');
+
+            // デモデータ初期化（初回）
+            if(loadCustomers().length===0){ const now=Date.now(); const demo=[
+                { id: 1, name:'田中 太郎', tel:'09011112222', gender:'male', email:'tanaka@example.com', address:'東京都千代田区1-1-1', birthday:'1990-04-01', keywords:'#肩こり #在宅', note:'肩こり', ticket:'10回券 2/10', updatedAt: now },
+                { id: 2, name:'山田 花子', tel:'09033334444', gender:'female', email:'yamada@example.com', address:'東京都渋谷区2-2-2', birthday:'1985-10-12', keywords:'#腰痛', note:'腰痛', ticket:'5回券 5/5', updatedAt: now },
+                { id: 3, name:'佐藤 次郎', tel:'08055556666', gender:'male', email:'sato@example.com', address:'神奈川県横浜市3-3-3', birthday:'2000-01-20', keywords:'#頭痛 #デスクワーク', note:'頭痛', ticket:'なし', updatedAt: now }
+            ]; saveCustomers(demo); }
+
+            els.qName.addEventListener('input', ()=>{ state.qName=els.qName.value; state.page=1; render(); });
+            els.qTel.addEventListener('input', ()=>{ state.qTel=els.qTel.value; state.page=1; render(); });
+            els.gender.addEventListener('change', ()=>{ state.gender=els.gender.value; state.page=1; render(); });
+            els.limit.addEventListener('change', ()=>{ state.limit=parseInt(els.limit.value,10)||20; state.page=1; render(); });
+            if(els.qAgeMin){ els.qAgeMin.addEventListener('input', ()=>{ state.ageMin=parseInt(els.qAgeMin.value,10)||''; state.page=1; render(); }); }
+            els.page.addEventListener('change', ()=>{ const p=parseInt(els.page.value,10)||1; state.page=Math.max(1,p); render(); });
+            els.prev.addEventListener('click', ()=>{ if(state.page>1){ state.page--; els.page.value=state.page; render(); } });
+            els.next.addEventListener('click', ()=>{ state.page++; els.page.value=state.page; render(); });
+
+            // ヘッダークリックソート
+            if(els.head){ els.head.querySelectorAll('th[data-sort]').forEach(th=>{
+                th.addEventListener('click', ()=>{
+                    const key=th.dataset.sort;
+                    if(state.sortKey===key){ state.sortDir = (state.sortDir==='asc')?'desc':'asc'; } else { state.sortKey=key; state.sortDir='asc'; }
+                    render();
+                });
+            }); }
+
+            document.getElementById('btnNew').addEventListener('click', ()=> openEditModal());
+            document.getElementById('btnExport').addEventListener('click', exportCsv);
+            document.getElementById('btnSave').addEventListener('click', saveEdit);
+            document.getElementById('btnDelete').addEventListener('click', removeEdit);
+
+            render();
+        });
+
+        function render(){
+            const visits = buildVisitStats();
+            let list = loadCustomers().map(x=>{ const v=visits[x.name]?.count||0; const last=visits[x.name]?.last||''; return { ...x, visits:v, last:last }; });
+            if(state.qName){ const qn=state.qName.trim().toLowerCase(); list=list.filter(x=> (x.name||'').toLowerCase().includes(qn)); }
+            if(state.qTel){ const qt=state.qTel.trim().toLowerCase(); list=list.filter(x=> (x.tel||'').toLowerCase().includes(qt)); }
+            // キーワード/備考の部分一致
+            if(state.qName){ const q=state.qName.trim().toLowerCase(); list=list.filter(x=> (x.keywords||'').toLowerCase().includes(q) || (x.note||'').toLowerCase().includes(q) || (x.name||'').toLowerCase().includes(q)); }
+            if(state.gender){ list=list.filter(x=> (x.gender||'')===state.gender); }
+            if(state.ageMin){ list=list.filter(x=> calcAge(x.birthday)>=state.ageMin); }
+            list.sort((a,b)=>{ const k=state.sortKey; const dir=state.sortDir==='asc'?1:-1; const va=(k==='last')?(a.last||''):(k==='visits')?(a.visits||0):(k==='birthday')?(a.birthday||''):(k==='id')?(parseInt(a.id,10)||0):(k==='name')?(a.name||''):(k==='tel')?(a.tel||''):(a.updatedAt||0); const vb=(k==='last')?(b.last||''):(k==='visits')?(b.visits||0):(k==='birthday')?(b.birthday||''):(k==='id')?(parseInt(b.id,10)||0):(k==='name')?(b.name||''):(k==='tel')?(b.tel||''):(b.updatedAt||0); if(typeof va==='number' && typeof vb==='number') return dir*(va-vb); return dir*String(va).localeCompare(String(vb),'ja'); });
+            updateHeaderSortIcons();
+
+            const total=list.length; const start=(state.page-1)*state.limit; const slice=list.slice(start, start+state.limit);
+            els.result.textContent = `${total}件中 ${start+1}-${Math.min(total,start+state.limit)}件を表示`;
+            els.body.innerHTML = slice.map(rowHtml).join('');
+            // 行クリックでも編集
+            Array.from(els.body.querySelectorAll('tr[data-id]')).forEach(tr=>{
+                tr.addEventListener('click', (e)=>{ if(e.target.closest('button')) return; openEditModal(tr.dataset.id); });
+            });
+        }
+
+        function updateHeaderSortIcons(){ const ths=document.querySelectorAll('thead th[data-sort]'); ths.forEach(th=>{ const key=th.dataset.sort; const icon=th.querySelector('i'); if(!icon) return; icon.classList.remove('fa-sort','fa-sort-up','fa-sort-down'); if(state.sortKey===key){ icon.classList.add(state.sortDir==='asc'?'fa-sort-up':'fa-sort-down'); } else { icon.classList.add('fa-sort'); } }); }
+
+        function rowHtml(x){
+            const id=String(x.id);
+            const last=x.last? x.last : '-';
+            const note=(x.note||'').slice(0,30);
+            return `<tr class="hover" data-id="${id}">
+                <td>${id}</td>
+                <td>${escapeHtml(x.name||'')}</td>
+                <td>${escapeHtml(x.tel||'')}</td>
+                <td class="hidden xl:table-cell">${escapeHtml(x.birthday||'')}</td>
+                <td class="hidden lg:table-cell">${last}</td>
+                <td>${x.visits||0}</td>
+                <td class="hidden xl:table-cell">${escapeHtml(x.keywords||'')}</td>
+                <td class="hidden xl:table-cell">${escapeHtml(note)}</td>
+                
+                <td class="text-center"><button class="btn btn-xs btn-outline w-full md:w-auto whitespace-nowrap" onclick="openEditModal('${id}')"><i class="fas fa-edit"></i><span class="hidden md:inline ml-1">編集</span></button></td>
+            </tr>`;
+        }
+
+        function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
+
+        function openEditModal(id){ const list=loadCustomers(); let rec=null; if(id){ currentEditId=String(id); rec=list.find(x=> String(x.id)===String(id)); } else { currentEditId=null; }
+            document.getElementById('f_name').value=rec?.name||'';
+            document.getElementById('f_tel').value=rec?.tel||'';
+            document.getElementById('f_email').value=rec?.email||'';
+            document.getElementById('f_gender').value=rec?.gender||'';
+            document.getElementById('f_address').value=rec?.address||'';
+            document.getElementById('f_birthday').value=rec?.birthday||'';
+            document.getElementById('f_keywords').value=rec?.keywords||'';
+            document.getElementById('f_note').value=rec?.note||'';
+            document.getElementById('f_ticket').value=rec?.ticket||'';
+            document.getElementById('btnDelete').style.display = rec? 'inline-flex':'none';
+            document.getElementById('editModal').showModal();
+        }
+
+        function saveEdit(){ const name=document.getElementById('f_name').value.trim(); if(!name){ alert('氏名は必須です'); return; }
+            const list=loadCustomers(); const now=Date.now();
+            if(currentEditId){
+                const idx=list.findIndex(x=> String(x.id)===String(currentEditId)); if(idx<0) return;
+                list[idx]={ ...list[idx], name, tel:document.getElementById('f_tel').value, gender:document.getElementById('f_gender').value, email:document.getElementById('f_email').value, address:document.getElementById('f_address').value, birthday:document.getElementById('f_birthday').value, keywords:document.getElementById('f_keywords').value, note:document.getElementById('f_note').value, updatedAt: now };
+                saveCustomers(list);
+            } else {
+                const newId = generateId(list);
+                const rec={ id:newId, name, tel:document.getElementById('f_tel').value, gender:document.getElementById('f_gender').value, email:document.getElementById('f_email').value, address:document.getElementById('f_address').value, birthday:document.getElementById('f_birthday').value, keywords:document.getElementById('f_keywords').value, note:document.getElementById('f_note').value, updatedAt: now };
+                upsertCustomer(rec);
+            }
+            document.getElementById('editModal').close(); render();
+        }
+
+        function removeEdit(){ if(!currentEditId) return; if(!confirm('削除しますか？')) return; deleteCustomer(currentEditId); document.getElementById('editModal').close(); render(); }
+
+        function generateId(list){ let max=0; list.forEach(x=>{ const n=parseInt(x.id,10)||0; if(n>max) max=n; }); return max+1; }
+
+        function exportCsv(){ const visits=buildVisitStats(); const rows=[["ID","氏名","電話","メール","住所","性別","生年月日","検索KW","メモ","回数券","最終来店","来店回数","更新日"]];
+            loadCustomers().forEach(x=>{ const last=visits[x.name]?.last||''; const cnt=visits[x.name]?.count||0; rows.push([x.id,x.name||'',x.tel||'',x.email||'',(x.address||'').replace(/\n/g,' '),x.gender||'',x.birthday||'',x.keywords||'',(x.note||'').replace(/\n/g,' '),x.ticket||'', last, cnt, new Date(x.updatedAt||0).toISOString()]); });
+            const bom='\uFEFF'; const csv=rows.map(r=> r.map(s=> `"${String(s).replace(/"/g,'""')}"`).join(',')).join('\r\n'); const blob=new Blob([bom+csv],{type:'text/csv;charset=utf-8;'});
+            const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`customers_${formatDate(new Date())}.csv`; a.click(); URL.revokeObjectURL(url);
+        }
+        function calcAge(ymd){ if(!ymd) return 0; const [y,m,d]=(ymd||'').split('-').map(Number); const today=new Date(); let age=today.getFullYear()-y; const mm=today.getMonth()+1; const dd=today.getDate(); if(mm<m || (mm===m && dd<d)) age--; return age; }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

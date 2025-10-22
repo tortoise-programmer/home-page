@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>受付TOP</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.20/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .menu li > a.menu-active { background-color: rgb(59 130 246 / 0.1) !important; color: rgb(59 130 246) !important; border-right: 2px solid rgb(59 130 246); font-weight: 600; }
+        .menu li > a:hover:not(.menu-active) { background-color: rgb(0 0 0 / 0.05); }
+        .reception-table { table-layout: fixed; width: 100%; }
+        .reception-table th:first-child, .reception-table td:first-child { width: 80px; min-width: 80px; }
+        .reception-table th:not(:first-child), .reception-table td:not(:first-child) { width: 150px; min-width: 150px; }
+        .time-cell { height: 80px; width: 100%; border-radius: 6px; position: relative; cursor: pointer; background-image: repeating-linear-gradient(to bottom, rgba(0,0,0,0.06) 0px, rgba(0,0,0,0.06) 1px, transparent 1px, transparent 12.5%); transition: background-color 0.15s ease; }
+        .day-hour-cell { position: relative; height: 80px; }
+        .reception-block { position: absolute; left: 4px; right: 4px; border-radius: 6px; color: #fff; padding: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); font-size: 11px; overflow: hidden; cursor: pointer; }
+        .staff-tanaka { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
+        .staff-yamada { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+        .staff-sato { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
+        .staff-suzuki { background: linear-gradient(135deg, #eab308, #ca8a04); color: white; }
+        .staff-equipment { background: linear-gradient(135deg, #6b7280, #4b5563); color: white; }
+        .reception-block:hover { transform: scale(1.02); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        .treatment-cards-container { scrollbar-width: thin; scrollbar-color: #cbd5e1 #f1f5f9; }
+        .treatment-cards-container::-webkit-scrollbar { height: 8px; }
+        .treatment-cards-container::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        .treatment-cards-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .treatment-cards-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+    <script>
+      function formatCurrency(n){ const v=Number(n||0); return v.toLocaleString('ja-JP',{style:'currency', currency:'JPY', maximumFractionDigits:0}); }
+      function loadTodayReception(){ 
+        // スケジュール表示
+        const head=document.getElementById('scheduleTableHead'); 
+        const body=document.getElementById('scheduleTableBody'); 
+        const staffData={ 
+          tanaka:{name:'田中 太郎',color:'bg-green-500'}, 
+          yamada:{name:'山田 花子',color:'bg-blue-500'}, 
+          sato:{name:'佐藤 次郎',color:'bg-purple-500'}, 
+          suzuki:{name:'鈴木 美咲',color:'bg-pink-500'} 
+        }; 
+        const cfg=loadBusinessSettings(); 
+        const open=cfg?.businessHours?.start||'10:00'; 
+        const close=cfg?.businessHours?.end||'19:00'; 
+        const slots=buildTimeSlots(open, close, 60); 
+        let h='<tr class="bg-base-200"><th class="w-20 text-center">時間</th>'; 
+        Object.values(staffData).forEach(s=> h+=`<th class="text-center">${s.name}</th>`); 
+        h+='</tr>'; 
+        head.innerHTML=h; 
+        let b=''; 
+        slots.forEach(time=>{ 
+          b+='<tr class="border-b border-base-300">'; 
+          b+=`<td class="text-center font-mono text-sm bg-base-50">${time}</td>`; 
+          Object.keys(staffData).forEach(id=>{ 
+            b+=`<td class="p-2 relative day-hour-cell" onclick="handleTopTimeCellClick(event,'${time}','${id}')"><div class="time-cell"></div></td>`; 
+          }); 
+          b+='</tr>'; 
+        }); 
+        body.innerHTML=b; 
+        const today=new Date(); 
+        const yyyy=today.getFullYear(); 
+        const mm=String(today.getMonth()+1).padStart(2,'0'); 
+        const dd=String(today.getDate()).padStart(2,'0'); 
+        const dateStr=`${yyyy}-${mm}-${dd}`; 
+        Object.keys(localStorage).forEach(key=>{ 
+          if(!key.startsWith(`schedule_${dateStr}_`)) return; 
+          try{ 
+            const data=JSON.parse(localStorage.getItem(key)); 
+            if(!data||!data.time) return; 
+            renderReceptionBlock(data, staffData); 
+          }catch{} 
+        }); 
+        // 一覧表示も維持
+        loadReceptionList(); 
+      }
+
+      function handleTopTimeCellClick(e, baseTime, staff){
+        const cell=e.currentTarget; const rect=cell.getBoundingClientRect();
+        const y=e.clientY-rect.top; const height=rect.height; const minutes=Math.max(0,Math.min(59,Math.round((y/height)*60)));
+        const rounded=Math.round(minutes/5)*5; const [h,m]=baseTime.split(':').map(Number);
+        const start=new Date(); start.setHours(h, m+rounded, 0, 0);
+        const yyyy=start.getFullYear(); const mm=String(start.getMonth()+1).padStart(2,'0'); const dd=String(start.getDate()).padStart(2,'0');
+        const hh=String(start.getHours()).padStart(2,'0'); const mi=String(start.getMinutes()).padStart(2,'0');
+        openQuickScheduleModal(`${yyyy}-${mm}-${dd}`, `${hh}:${mi}`, staff);
+      }
+      function loadReceptionList(){ 
+        // 施術中リスト表示
+        const treatmentBody = document.getElementById('treatmentListBody');
+        treatmentBody.innerHTML = '';
+        
+        // 直近の予約カード表示
+        const recentCardsContainer = document.getElementById('recentCards');
+        recentCardsContainer.innerHTML = '';
+        
+        const now = new Date();
+        const treatmentRows = [];
+        const recentRows = [];
+        
+        Object.keys(localStorage).forEach(k => {
+          if (!k.startsWith('schedule_')) return;
+          try {
+            const d = JSON.parse(localStorage.getItem(k));
+            if (!d || !d.date || !d.time) return;
+            
+            const start = new Date(`${d.date}T${d.time}:00`);
+            const end = new Date(start.getTime() + parseInt(d.duration || '60', 10) * 60000);
+            
+            // 施術中判定（現在時刻が開始〜終了時間内）
+            if (start <= now && now <= end) {
+              treatmentRows.push(d);
+            }
+            // 直近の予約判定（未来の予約で、今日から3日以内）
+            else if (start > now) {
+              const daysDiff = Math.ceil((start - now) / (1000 * 60 * 60 * 24));
+              if (daysDiff <= 3) {
+                recentRows.push(d);
+              }
+            }
+          } catch {}
+        });
+        
+        // 施術中リスト表示
+        if (treatmentRows.length === 0) {
+          treatmentBody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-base-content/60">施術中の予約はありません</td></tr>';
+        } else {
+          treatmentRows.sort((a, b) => {
+            const sa = new Date(`${a.date}T${a.time}:00`).getTime();
+            const sb = new Date(`${b.date}T${b.time}:00`).getTime();
+            return sa - sb;
+          });
+          
+          treatmentRows.forEach(d => {
+            const breakdown = getBillingBreakdown(d);
+            const startLabel = `${d.date || ''} ${d.time || ''}`;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td class="font-mono">${startLabel}</td>
+              <td>${d.customerName || ''}</td>
+              <td>${composeMenuText(d)}</td>
+              <td>${d.staff || ''}</td>
+              <td class="text-right">
+                <div class="text-xs text-base-content/60">プラン: ${formatCurrency(breakdown.base)}</div>
+                <div class="text-xs text-base-content/60">オプション: ${formatCurrency(breakdown.option)}</div>
+                <div class="text-xs text-base-content/60">税額: ${formatCurrency(breakdown.tax)}</div>
+                <div class="font-bold text-primary text-lg">合計: ${formatCurrency(breakdown.total)}</div>
+              </td>
+              <td class="text-center">
+                <button class="btn btn-xs btn-outline btn-primary" onclick="openReceptionDetail(${JSON.stringify(d).replace(/"/g, '&quot;')})">
+                  <i class="fas fa-file-invoice"></i>
+                </button>
+              </td>
+            `;
+            treatmentBody.appendChild(tr);
+          });
+        }
+        
+        // 直近の予約カード表示
+        if (recentRows.length === 0) {
+          recentCardsContainer.innerHTML = '<div class="text-center py-8 text-base-content/60 w-full">直近の予約はありません</div>';
+        } else {
+          recentRows.sort((a, b) => {
+            const sa = new Date(`${a.date}T${a.time}:00`).getTime();
+            const sb = new Date(`${b.date}T${b.time}:00`).getTime();
+            return sa - sb;
+          });
+          
+          recentRows.forEach(d => {
+            const breakdown = getBillingBreakdown(d);
+            const startLabel = `${d.date || ''} ${d.time || ''}`;
+            const today = new Date().toISOString().slice(0, 10);
+            const isToday = d.date === today;
+            
+            const card = document.createElement('div');
+            card.className = 'card bg-base-100 shadow-lg min-w-64 flex-shrink-0 cursor-pointer hover:shadow-xl transition-shadow';
+            card.onclick = () => openReceptionDetail(d);
+            
+            card.innerHTML = `
+              <div class="card-body p-3">
+                <div class="flex items-start justify-between mb-2">
+                  <div class="flex-1">
+                    <h3 class="font-bold text-base text-base-content">${d.customerName || ''}</h3>
+                    <p class="text-xs text-base-content/70 mt-1">${composeMenuText(d)}</p>
+                  </div>
+                  ${isToday ? '<div class="badge badge-primary badge-xs">本日</div>' : ''}
+                </div>
+                <div class="space-y-1">
+                  <div class="flex justify-between items-center">
+                    <span class="text-xs text-base-content/60">時間:</span>
+                    <span class="font-mono text-xs">${startLabel}</span>
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-xs text-base-content/60">担当:</span>
+                    <span class="text-xs">${d.staff || ''}</span>
+                  </div>
+                </div>
+              </div>
+            `;
+            recentCardsContainer.appendChild(card);
+          });
+        }
+      }
+      function renderReceptionBlock(data, staffData){ 
+        const [th]=data.time.split(':').map(Number); 
+        const baseRowTime=`${String(th).padStart(2,'0')}:00`; 
+        const row=Array.from(document.querySelectorAll('#scheduleTableBody tr')).find(tr=> tr.children[0] && tr.children[0].textContent.trim()===baseRowTime); 
+        if(!row) return; 
+        const staffOrder=['tanaka','yamada','sato','suzuki']; 
+        const idx=staffOrder.indexOf((data.staff||'').toLowerCase()); 
+        const colIdx=1 + (idx>=0?idx:0); 
+        if(colIdx>=row.children.length) return; 
+        const cell=row.children[colIdx]; 
+        const inner=cell.querySelector('.day-hour-cell')||cell; 
+        const [h,m]=data.time.split(':').map(Number); 
+        const duration=parseInt(data.duration||'60',10); 
+        const [bh,bm]=(row.children[0].textContent.trim()).split(':').map(Number); 
+        const startOffset=(h-bh)*60 + (m-bm); 
+        const px=80/60; 
+        const top=Math.max(0,startOffset*px); 
+        const height=Math.max(20,(startOffset+duration)*px - top); 
+        const staffClass=`staff-${data.staff||'tanaka'}`; 
+        const div=document.createElement('div'); 
+        div.className=`reception-block ${staffClass}`; 
+        div.style.top=`${top}px`; 
+        div.style.height=`${height}px`; 
+        div.dataset.name=data.customerName||''; 
+        const endTime=getEndTime(data.time, duration); 
+        div.dataset.time=`${data.time} - ${endTime}`; 
+        div.dataset.menu=data.menu||''; 
+        const price=(data.price!=null)? data.price : estimatePrice(data); 
+        div.dataset.price=price; 
+        div.onclick=()=>openReceptionDetail(data); 
+        div.innerHTML=`<div class="font-semibold mb-1">${data.customerName||''}</div><div class="text-xs mb-1">${data.time} - ${endTime}</div><div class="text-xs mb-1">${data.menu||''}</div><div class="text-xs font-bold">${formatCurrency(price)}</div>${data.notes?`<div class="text-xs opacity-90">${data.notes}</div>`:''}`; 
+        inner.appendChild(div); 
+      }
+      let topEditingKey = null;
+      function openReceptionDetail(data){ 
+        openEditScheduleModal(data);
+      }
+      function loadBusinessSettings(){ try{ const raw=localStorage.getItem('businessSettings'); if(!raw) return null; return JSON.parse(raw); }catch{return null} }
+      function buildTimeSlots(start, end, step){ const res=[]; const [sh,sm]=start.split(':').map(Number); const [eh,em]=end.split(':').map(Number); let d=new Date(); d.setHours(sh,sm,0,0); const limit=new Date(); limit.setHours(eh,em,0,0); while(d<=limit){ res.push(d.toTimeString().slice(0,5)); d.setMinutes(d.getMinutes()+step); } return res; }
+      function getEndTime(startTime, duration){ const [h,m]=startTime.split(':').map(Number); const d=new Date(); d.setHours(h, m+duration, 0, 0); return d.toTimeString().slice(0,5); }
+      function estimatePrice(d){ // 簡易見積もり: メニュー名に応じた金額
+        const m=(d.menu||'').toLowerCase(); if(m.includes('120')) return 12000; if(m.includes('90')) return 9000; if(m.includes('60')) return 6000; if(m.includes('30')) return 3500; return 0; }
+      function optionPrice(d){ // オプション加算（仮ルール）
+        const op=(d.option||d.optionMenu||'').toLowerCase(); let sum=0; if(op.includes('head')||op.includes('ヘッド')) sum+=1000; if(op.includes('foot')||op.includes('フット')) sum+=1500; return sum; }
+      function calcBillingAmount(d){ 
+        const base = (d.price!=null)? Number(d.price): estimatePrice(d); 
+        const option = optionPrice(d);
+        const subtotal = base + option;
+        const tax = Math.round(subtotal * 0.1); // 10%の消費税
+        return subtotal + tax;
+      }
+      function getBillingBreakdown(d){
+        // お客様の予約データの場合、既に計算済みの値を使用
+        if (d.basePrice !== undefined && d.tax !== undefined) {
+          return { 
+            base: d.basePrice, 
+            option: d.optionPrice || 0, 
+            tax: d.tax, 
+            total: d.price 
+          };
+        }
+        // 従来の計算方法
+        const base = (d.price!=null)? Number(d.price): estimatePrice(d);
+        const option = optionPrice(d);
+        const subtotal = base + option;
+        const tax = Math.round(subtotal * 0.1);
+        const total = subtotal + tax;
+        return { base, option, tax, total };
+      }
+      function composeMenuText(d){ 
+        // お客様の予約データの場合、サービス情報も含める
+        if (d.service && d.serviceForPlan) {
+          const serviceNames = {
+            'acupuncture': '鍼',
+            'moxibustion': '灸', 
+            'seitai': '整体'
+          };
+          const serviceName = serviceNames[d.service] || d.service;
+          return `${d.menu || ''}（${serviceName}）`;
+        }
+        // 従来の処理
+        const op=(d.option||d.optionMenu||''); 
+        return op? `${d.menu||''}（${op}）` : (d.menu||''); 
+      }
+      
+      // スケジュール管理と同じモーダル表示（読み取り専用）
+      function showScheduleModal(data, readOnly = false) {
+        const modal = document.createElement('div');
+        modal.className = 'modal modal-open';
+        modal.innerHTML = `
+          <div class="modal-box max-w-2xl">
+            <h3 class="font-bold text-lg mb-4">
+              <i class="fas fa-calendar-check mr-2"></i>
+              ${readOnly ? '予約詳細' : '予約編集'}
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-control">
+                <label class="label"><span class="label-text font-semibold">お客様名</span></label>
+                <input type="text" class="input input-bordered w-full" value="${data.customerName || ''}" ${readOnly ? 'readonly' : ''} />
+              </div>
+              
+              <div class="form-control">
+                <label class="label"><span class="label-text font-semibold">電話番号</span></label>
+                <input type="tel" class="input input-bordered w-full" value="${data.phone || ''}" ${readOnly ? 'readonly' : ''} />
+              </div>
+              
+              <div class="form-control">
+                <label class="label"><span class="label-text font-semibold">日付</span></label>
+                <input type="date" class="input input-bordered w-full" value="${data.date || ''}" ${readOnly ? 'readonly' : ''} />
+              </div>
+              
+              <div class="form-control">
+                <label class="label"><span class="label-text font-semibold">時間</span></label>
+                <input type="time" class="input input-bordered w-full" value="${data.time || ''}" ${readOnly ? 'readonly' : ''} />
+              </div>
+              
+              <div class="form-control">
+                <label class="label"><span class="label-text font-semibold">メニュー</span></label>
+                <input type="text" class="input input-bordered w-full" value="${data.menu || ''}" ${readOnly ? 'readonly' : ''} />
+              </div>
+              
+              <div class="form-control">
+                <label class="label"><span class="label-text font-semibold">担当者</span></label>
+                <select class="select select-bordered w-full" ${readOnly ? 'disabled' : ''}>
+                  <option value="tanaka" ${data.staff === 'tanaka' ? 'selected' : ''}>田中 太郎</option>
+                  <option value="yamada" ${data.staff === 'yamada' ? 'selected' : ''}>山田 花子</option>
+                  <option value="sato" ${data.staff === 'sato' ? 'selected' : ''}>佐藤 次郎</option>
+                  <option value="suzuki" ${data.staff === 'suzuki' ? 'selected' : ''}>鈴木 美咲</option>
+                </select>
+              </div>
+              
+              <div class="form-control">
+                <label class="label"><span class="label-text font-semibold">所要時間（分）</span></label>
+                <input type="number" class="input input-bordered w-full" value="${data.duration || 60}" min="15" max="180" ${readOnly ? 'readonly' : ''} />
+              </div>
+              
+              <div class="form-control">
+                <label class="label"><span class="label-text font-semibold">金額</span></label>
+                <input type="number" class="input input-bordered w-full" value="${data.price || estimatePrice(data)}" ${readOnly ? 'readonly' : ''} />
+              </div>
+            </div>
+            
+            <div class="form-control mt-4">
+              <label class="label"><span class="label-text font-semibold">備考・メモ</span></label>
+              <textarea class="textarea textarea-bordered h-24" ${readOnly ? 'readonly' : ''}>${data.notes || ''}</textarea>
+            </div>
+            
+            <div class="modal-action">
+              <button class="btn btn-ghost" onclick="closeScheduleModal()">${readOnly ? '閉じる' : 'キャンセル'}</button>
+              ${!readOnly ? '<button class="btn btn-primary" onclick="saveSchedule()"><i class="fas fa-save mr-1"></i>保存</button>' : ''}
+            </div>
+          </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // モーダル外クリックで閉じる
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            closeScheduleModal();
+          }
+        });
+      }
+      
+      function closeScheduleModal() {
+        const modal = document.querySelector('.modal');
+        if (modal) {
+          modal.remove();
+        }
+      }
+      
+      document.addEventListener('DOMContentLoaded', ()=>{ loadTodayReception(); });
+    </script>
+</head>
+<body class="bg-base-200 min-h-screen">
+    <div class="drawer lg:drawer-open">
+        <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-side"><label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label><aside class="min-h-full w-64 bg-base-100 shadow-lg relative"><div id="sidebar-slot"></div></aside></div>
+        <div class="drawer-content">
+            <div class="navbar bg-base-100 shadow-sm lg:hidden"><div class="navbar-start"><label for="drawer-toggle" class="btn btn-square btn-ghost"><i class="fas fa-bars text-xl"></i></label></div><div class="navbar-center"><span class="text-lg font-semibold">受付TOP</span></div></div>
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h1 class="text-2xl font-bold">受付TOP</h1>
+                    <div class="flex items-center gap-2">
+                        <button class="btn btn-primary btn-sm" id="btnOpenNew"><i class="fas fa-calendar-plus mr-1"></i>新規予約</button>
+                    </div>
+                </div>
+                
+                <!-- 直近の予約カード表示 -->
+                <div class="card w-full bg-base-100 shadow-xl mb-6">
+                    <div class="card-body">
+                        <h2 class="card-title text-lg font-bold mb-4">
+                            <i class="fas fa-clock"></i>
+                            直近の予約
+                        </h2>
+                        <div class="overflow-x-auto treatment-cards-container">
+                            <div class="flex gap-4 pb-4" id="recentCards">
+                                <!-- カードがここに動的に追加されます -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 施術中リスト表示 -->
+                <div class="card w-full bg-base-100 shadow-xl mb-6">
+                    <div class="card-body">
+                        <h2 class="card-title text-lg font-bold mb-4">
+                            <i class="fas fa-user-md"></i>
+                            施術中
+                        </h2>
+                        <div class="overflow-x-auto">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:140px;">時間</th>
+                                        <th>お客様</th>
+                                        <th>メニュー</th>
+                                        <th>担当</th>
+                                        <th class="text-right" style="width:140px;">請求額</th>
+                                        <th style="width:60px;">領収</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="treatmentListBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- スケジュール表示 -->
+                <div class="card w-full bg-base-100 shadow-xl">
+                    <div class="card-body">
+                        <h2 class="card-title text-lg font-bold mb-2">
+                            <i class="fas fa-calendar-day"></i>
+                            本日のスケジュール
+                        </h2>
+                        <div class="overflow-x-auto">
+                            <table class="table table-pin-rows reception-table">
+                                <thead id="scheduleTableHead"></thead>
+                                <tbody id="scheduleTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- KPIカード -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="card bg-base-100 shadow-xl">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h2 class="card-title text-sm text-base-content/70">来店数（カルテ数）</h2>
+                                    <div class="flex items-center gap-2 mt-2">
+                                        <i class="fas fa-info-circle text-info"></i>
+                                        <div class="text-2xl font-bold">本日: 12名</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card bg-base-100 shadow-xl">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h2 class="card-title text-sm text-base-content/70">受付中ステータス</h2>
+                                    <div class="flex items-center gap-2 mt-2">
+                                        <i class="fas fa-info-circle text-info"></i>
+                                        <div class="text-2xl font-bold">36件</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card bg-base-100 shadow-xl">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h2 class="card-title text-sm text-base-content/70">新規・リピート</h2>
+                                    <div class="flex items-center gap-2 mt-2">
+                                        <i class="fas fa-info-circle text-info"></i>
+                                        <div class="text-sm">新規: 15名</div>
+                                    </div>
+                                    <div class="text-sm text-base-content/70 mt-1">リピート: 56名</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- サービス提供者
+                <div class="card bg-base-100 shadow-xl mb-6">
+                    <div class="card-body">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="card-title">サービス提供者</h2>
+                            <a class="btn btn-info btn-sm" href="service_providers.html"><i class="fas fa-plus mr-1"></i>一覧へ</a>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-4 bg-base-200 rounded-lg">
+                                <div class="flex items-center gap-4">
+                                    <div class="avatar"><div class="w-12 h-12 rounded-full bg-base-300 flex items-center justify-center"><i class="fas fa-dumbbell text-lg text-base-content flex w-full h-full items-center justify-center"></i></div></div>
+                                    <div><h3 class="font-semibold">トレーニング機器A</h3></div>
+                                </div>
+                                <div class="flex items-center gap-8 text-center">
+                                    <div><div class="text-2xl font-bold">15</div><div class="text-xs text-base-content/70">登録顧客数</div></div>
+                                    <div><div class="text-2xl font-bold">12</div><div class="text-xs text-base-content/70">今月のカルテ数</div></div>
+                                    <div><div class="text-2xl font-bold">0</div><div class="text-xs text-base-content/70">今月の新規顧客数</div></div>
+                                    <div><div class="text-2xl font-bold">33%</div><div class="text-xs text-base-content/70">今月のリピート率</div></div>
+                                    <a class="btn btn-success btn-sm" href="service_providers.html"><i class="fas fa-edit mr-1"></i>編集する</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                スポンサー
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body">
+                        <h2 class="card-title mb-4">スポンサー</h2>
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                            <div class="aspect-video bg-base-200 rounded-lg flex items-center justify-center"><img src="https://via.placeholder.com/200x100?text=Sponsor1" alt="スポンサー1" class="max-w-full max-h-full object-contain" /></div>
+                            <div class="aspect-video bg-base-200 rounded-lg flex items-center justify-center"><img src="https://via.placeholder.com/200x100?text=Sponsor2" alt="スポンサー2" class="max-w-full max-h-full object-contain" /></div>
+                            <div class="aspect-video bg-base-200 rounded-lg flex items-center justify-center"><img src="https://via.placeholder.com/200x100?text=Sponsor3" alt="スポンサー3" class="max-w-full max-h-full object-contain" /></div>
+                            <div class="aspect-video bg-base-200 rounded-lg flex items-center justify-center"><img src="https://via.placeholder.com/200x100?text=Sponsor4" alt="スポンサー4" class="max-w-full max-h-full object-contain" /></div>
+                            <div class="aspect-video bg-base-200 rounded-lg flex items-center justify-center"><img src="https://via.placeholder.com/200x100?text=Sponsor5" alt="スポンサー5" class="max-w-full max-h-full object-contain" /></div>
+                        </div>
+                    </div>
+                </div> -->
+            </div>
+        </div>
+    </div>
+    <script src="assets/common.js"></script>
+    <script>
+      // 新規予約モーダル（スケジュール管理と同系の要素を簡略）
+      function openNewReservation(){
+        const modal=document.createElement('dialog');
+        modal.className='modal';
+        modal.id='newReservationModal';
+        modal.innerHTML=`
+          <div class="modal-box w-11/12 max-w-2xl">
+            <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+            <h3 class="font-bold text-lg mb-4"><i class="fas fa-calendar-plus mr-2 text-primary"></i>新規予約</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-control"><label class="label"><span class="label-text font-semibold">日付</span></label><input type="date" class="input input-bordered" id="nr_date" /></div>
+              <div class="form-control"><label class="label"><span class="label-text font-semibold">時間</span></label><input type="time" class="input input-bordered" id="nr_time" /></div>
+              <div class="form-control md:col-span-2"><label class="label"><span class="label-text font-semibold">お客様名</span></label><input type="text" class="input input-bordered" id="nr_name" placeholder="お客様名" /></div>
+              <div class="form-control"><label class="label"><span class="label-text font-semibold">メニュー</span></label><input type="text" class="input input-bordered" id="nr_menu" placeholder="メニュー" /></div>
+              <div class="form-control"><label class="label"><span class="label-text font-semibold">担当者</span></label><select class="select select-bordered" id="nr_staff"><option value="">担当者を選択</option><option value="tanaka">田中 太郎</option><option value="yamada">山田 花子</option><option value="sato">佐藤 次郎</option><option value="suzuki">鈴木 美咲</option></select></div>
+              <div class="form-control"><label class="label"><span class="label-text font-semibold">所要時間（分）</span></label><input type="number" class="input input-bordered" id="nr_duration" value="60" min="15" max="180" /></div>
+              <div class="form-control"><label class="label"><span class="label-text font-semibold">金額</span></label><input type="number" class="input input-bordered" id="nr_price" value="0" /></div>
+              <div class="form-control md:col-span-2"><label class="label"><span class="label-text font-semibold">備考</span></label><textarea class="textarea textarea-bordered" id="nr_notes" placeholder="注意点など"></textarea></div>
+            </div>
+            <div class="modal-action">
+              <form method="dialog" class="flex gap-2">
+                <button class="btn btn-ghost">キャンセル</button>
+                <button class="btn btn-primary" type="button" onclick="saveNewReservation()"><i class="fas fa-save mr-1"></i>登録する</button>
+              </form>
+            </div>
+          </div>`;
+        document.body.appendChild(modal);
+        modal.showModal();
+        // 既定値を本日・現在時刻に
+        const d=new Date();
+        const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const day=String(d.getDate()).padStart(2,'0');
+        const hh=String(d.getHours()).padStart(2,'0'); const mm=String(d.getMinutes()).padStart(2,'0');
+        document.getElementById('nr_date').value=`${y}-${m}-${day}`;
+        document.getElementById('nr_time').value=`${hh}:${mm}`;
+      }
+      function saveNewReservation(){
+        const date=document.getElementById('nr_date').value;
+        const time=document.getElementById('nr_time').value;
+        const name=(document.getElementById('nr_name').value||'').trim();
+        const menu=document.getElementById('nr_menu').value||'';
+        const staff=(document.getElementById('nr_staff').value||'').toLowerCase();
+        const duration=parseInt(document.getElementById('nr_duration').value||'60',10);
+        const price=parseInt(document.getElementById('nr_price').value||'0',10);
+        const notes=document.getElementById('nr_notes').value||'';
+        if(!name){ alert('お客様名は必須です'); return; }
+        if(!date||!time){ alert('日付と時間を入力してください'); return; }
+        const data={ date, time, staff, customerName:name, menu, duration, price, notes };
+        try{ localStorage.setItem(`schedule_${date}_${time}`, JSON.stringify(data)); }catch{}
+        const dlg=document.getElementById('newReservationModal'); if(dlg) dlg.close();
+        loadTodayReception();
+      }
+
+      document.addEventListener('DOMContentLoaded', ()=>{
+        const btn=document.getElementById('btnOpenNew'); if(btn){ btn.addEventListener('click', openNewReservation); }
+        const btn2=document.getElementById('btnOpenSchedule'); if(btn2){ btn2.addEventListener('click', openTopScheduleModal); }
+      });
+    </script>
+
+    <!-- スケジュール登録: schedule.html の patientChartModal と同等のUI -->
+    <dialog id="patientChartModal" class="modal">
+        <div class="modal-box w-11/12 max-w-4xl">
+            <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+            <h3 class="font-bold text-lg mb-4"><i class="fas fa-user-md mr-2 text-success"></i>スケジュール登録</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">開始時間</span></label><input type="datetime-local" class="input input-bordered datetime-input" id="chartStartTime" /></div>
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">終了時間</span></label><input type="datetime-local" class="input input-bordered datetime-input" id="chartEndTime" disabled /></div>
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">顧客ID/顧客名</span></label><div class="flex gap-2"><input type="text" placeholder="ID" class="input input-bordered w-24" id="chartCustomerId" /><input type="text" class="input input-bordered flex-1" id="chartCustomerName" placeholder="お客様名を入力" /><button class="btn btn-info btn-sm">詳細ページへ</button></div><button class="btn btn-success btn-sm mt-2 w-full">新規顧客登録</button></div>
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">部屋名</span></label><select class="select select-bordered menu-input" id="chartRoom"><option value="">予約枠</option><option value="room1">施術室1</option><option value="room2">施術室2</option></select></div>
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">メニュー</span></label><select class="select select-bordered menu-input" id="chartMenu"><option value="">【30分】早整体 美容</option><option value="basic30">基本整体コース（30分）</option><option value="standard60">スタンダード整体コース（60分）</option><option value="premium90">プレミアム整体コース（90分）</option><option value="fullbody120">フルボディケアコース（120分）</option></select></div>
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">オプションメニュー</span></label><select class="select select-bordered menu-input" id="chartOptionMenu"><option value="">選択してください</option><option value="head">ヘッドマッサージ</option><option value="foot">フットケア</option></select></div>
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">担当者</span></label><select class="select select-bordered menu-input" id="chartStaff"><option value="">担当者を選択</option><option value="tanaka">田中 太郎</option><option value="yamada">山田 花子</option><option value="sato">佐藤 次郎</option><option value="suzuki">鈴木 美咲</option></select></div>
+                </div>
+                <div class="space-y-4">
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">備考</span></label><textarea class="textarea textarea-bordered h-24" id="chartNotes"></textarea></div>
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">顧客メモ</span></label><textarea class="textarea textarea-bordered h-24" id="chartCustomerNotes"></textarea></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="form-control"><label class="label"><span class="label-text font-semibold">来店時間</span></label><input type="time" class="input input-bordered w-full" id="chartArrivalTime" /></div>
+                        <div class="form-control"><label class="label"><span class="label-text font-semibold">退店時間</span></label><input type="time" class="input input-bordered w-full" id="chartDepartureTime" /></div>
+                    </div>
+                    <div class="form-control"><label class="label"><span class="label-text font-semibold">ステータス</span></label><div class="flex gap-2"><label class="label cursor-pointer"><input type="radio" name="chartStatus" value="scheduled" class="radio radio-primary" checked /><span class="label-text ml-2">予約済み</span></label><label class="label cursor-pointer"><input type="radio" name="chartStatus" value="arrived" class="radio radio-success" /><span class="label-text ml-2">来店済み</span></label><label class="label cursor-pointer"><input type="radio" name="chartStatus" value="completed" class="radio radio-info" /><span class="label-text ml-2">完了</span></label></div></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="form-control"><label class="label"><span class="label-text font-semibold">インターバル（分）</span></label><input type="number" class="input input-bordered w-full" id="chartIntervalMinutes" min="0" max="120" value="0" /></div>
+                        <div class="form-control"><label class="label"><span class="label-text font-semibold">担当者</span></label><select class="select select-bordered w-full" id="chartIntervalStaff"><option value="">担当者を選択</option><option value="tanaka">田中 太郎</option><option value="yamada">山田 花子</option><option value="sato">佐藤 次郎</option><option value="suzuki">鈴木 美咲</option></select></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-action">
+                <form method="dialog" class="flex gap-2">
+                    <button class="btn btn-error btn-outline" type="button" onclick="cancelTopSchedule()"><i class="fas fa-times mr-1"></i>キャンセル</button>
+                    <button class="btn btn-success" type="button" onclick="saveTopPatientChart()"><i class="fas fa-save mr-1"></i>保存する</button>
+                </form>
+            </div>
+        </div>
+    </dialog>
+
+    <script>
+      function openQuickScheduleModal(date, time, staff){
+        document.getElementById('chartStartTime').value=`${date}T${time}`;
+        const startDate=new Date(`${date}T${time}:00`);
+        const menuSel=document.getElementById('chartMenu');
+        let duration=60; const apply=()=>{ const end=new Date(startDate); end.setMinutes(end.getMinutes()+duration); document.getElementById('chartEndTime').value=end.toISOString().slice(0,16); };
+        apply();
+        if(menuSel && !menuSel._bind){ menuSel.addEventListener('change',()=>{ const v=menuSel.value; if(v==='basic30') duration=30; else if(v==='standard60') duration=60; else if(v==='premium90') duration=90; else if(v==='fullbody120') duration=120; else duration=60; apply(); }); menuSel._bind=true; }
+        document.getElementById('chartCustomerId').value='';
+        document.getElementById('chartCustomerName').value='';
+        document.getElementById('chartNotes').value='';
+        document.getElementById('chartCustomerNotes').value='';
+        document.getElementById('chartStaff').value=staff||'';
+        document.getElementById('patientChartModal').showModal();
+      }
+      function openEditScheduleModal(data){
+        const date=data.date; const time=data.time; const staff=(data.staff||'');
+        document.getElementById('chartStartTime').value=`${date}T${time}`;
+        const startDate=new Date(`${date}T${time}:00`);
+        const menuSel=document.getElementById('chartMenu');
+        let duration=parseInt(data.duration||'60',10); const apply=()=>{ const end=new Date(startDate); end.setMinutes(end.getMinutes()+duration); document.getElementById('chartEndTime').value=end.toISOString().slice(0,16); };
+        apply();
+        if(menuSel && !menuSel._bind){ menuSel.addEventListener('change',()=>{ const v=menuSel.value; if(v==='basic30') duration=30; else if(v==='standard60') duration=60; else if(v==='premium90') duration=90; else if(v==='fullbody120') duration=120; else duration=60; apply(); }); menuSel._bind=true; }
+        document.getElementById('chartCustomerId').value='';
+        document.getElementById('chartCustomerName').value=data.customerName||'';
+        document.getElementById('chartNotes').value=data.notes||'';
+        document.getElementById('chartCustomerNotes').value='';
+        document.getElementById('chartStaff').value=staff||'';
+        topEditingKey = `schedule_${date}_${time}`;
+        document.getElementById('patientChartModal').showModal();
+      }
+      function saveTopPatientChart(){
+        const startStr=document.getElementById('chartStartTime').value; const start=new Date(startStr);
+        const menuSel=document.getElementById('chartMenu'); const menuText=menuSel?.options[menuSel.selectedIndex]?.textContent||''; const val=menuSel?.value||'';
+        let duration=60; if(val==='basic30') duration=30; else if(val==='standard60') duration=60; else if(val==='premium90') duration=90; else if(val==='fullbody120') duration=120;
+        const end=new Date(start); end.setMinutes(end.getMinutes()+duration); document.getElementById('chartEndTime').value=end.toISOString().slice(0,16);
+        const name=(document.getElementById('chartCustomerName')?.value||'').trim();
+        const option=document.getElementById('chartOptionMenu'); const optionText=option?.options[option.selectedIndex]?.textContent||'';
+        const staff=(document.getElementById('chartStaff').value||'').toLowerCase();
+        const date=startStr.slice(0,10); const time=startStr.slice(11,16);
+        const intervalMin=parseInt(document.getElementById('chartIntervalMinutes').value||'0',10);
+        const intervalStaff=(document.getElementById('chartIntervalStaff').value||staff||'').toLowerCase();
+        const data={ date, time, staff, customerName:name, menu: option && option.value ? `${menuText} / ${optionText}` : menuText, notes: document.getElementById('chartNotes').value || document.getElementById('chartCustomerNotes').value || '', duration, interval:{ minutes: intervalMin, staff: intervalStaff } };
+        try{
+          // 既存キーが編集対象なら削除し、新キーで保存
+          if(topEditingKey && topEditingKey!==`schedule_${date}_${time}`){ try{ localStorage.removeItem(topEditingKey); }catch{}
+          }
+          localStorage.setItem(`schedule_${date}_${time}`, JSON.stringify(data));
+        }catch{}
+        document.getElementById('patientChartModal').close();
+        loadTodayReception();
+      }
+      function cancelTopSchedule(){ document.getElementById('patientChartModal').close(); }
+    </script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,115 @@
+<div class="p-4 border-b border-base-300">
+    <div class="flex items-center gap-3">
+        <span class="fa-stack text-primary text-2xl">
+            <i class="fas fa-circle fa-stack-2x"></i>
+            <i class="fas fa-hand-holding-medical fa-stack-1x fa-inverse"></i>
+        </span>
+        <h1 class="text-xl font-bold">管理画面</h1>
+    </div>
+</div>
+
+<ul class="menu p-4 space-y-2">
+    <li>
+        <a href="reception_top.html">
+            <i class="fas fa-home"></i>
+            受付TOP
+        </a>
+    </li>
+    <li>
+        <details class="group">
+            <summary class="flex items-center gap-3 p-3 rounded-lg hover:bg-base-200 cursor-pointer">
+                <i class="fas fa-users"></i>
+                <span>顧客管理</span>
+            </summary>
+            <ul class="ml-6 mt-2 space-y-1">
+                <li>
+                    <a href="customer.html" class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200">
+                        <i class="fas fa-user-circle text-sm"></i>
+                        顧客情報
+                    </a>
+                </li>
+                <li>
+                    <a href="reception.html" class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200">
+                        <i class="fas fa-clipboard-list text-sm"></i>
+                        受付一覧
+                    </a>
+                </li>
+                <li>
+                    <a href="schedule.html" class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200">
+                        <i class="fas fa-calendar-week text-sm"></i>
+                        スケジュール管理
+                    </a>
+                </li>
+                <li>
+                    <a href="reviews.html" class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200">
+                        <i class="fas fa-star text-sm"></i>
+                        口コミ
+                    </a>
+                </li>
+            </ul>
+        </details>
+    </li>
+    <li>
+        <details class="group">
+            <summary class="flex items-center gap-3 p-3 rounded-lg hover:bg-base-200 cursor-pointer">
+                <i class="fas fa-store"></i>
+                <span>店舗・治療院設定</span>
+            </summary>
+            <ul class="ml-6 mt-2 space-y-1">
+                <li>
+                    <a href="clinic_info.html" class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200">
+                        <i class="fas fa-info-circle text-sm"></i>
+                        店舗・治療院情報
+                    </a>
+                </li>
+                <li>
+                    <a href="service_providers.html" class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200">
+                        <i class="fas fa-hand-holding-medical text-sm"></i>
+                        サービス提供者
+                    </a>
+                </li>
+                <li>
+                    <a href="menu_management.html" class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200">
+                        <i class="fas fa-list text-sm"></i>
+                        メニュー管理
+                    </a>
+                </li>
+                <li>
+                    <a href="questionnaires.html" class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200">
+                        <i class="fas fa-file-alt text-sm"></i>
+                        問診票一覧
+                    </a>
+                </li>
+            </ul>
+        </details>
+    </li>
+    <li>
+        <a href="analytics.html">
+            <i class="fas fa-chart-bar"></i>
+            集計
+        </a>
+    </li>
+    <li>
+        <a href="settings.html">
+            <i class="fas fa-cog"></i>
+            設定
+        </a>
+    </li>
+</ul>
+
+<div class="absolute bottom-4 left-4 right-4">
+    <div class="dropdown dropdown-top w-full">
+        <div tabindex="0" role="button" class="btn btn-ghost w-full justify-start">
+            <i class="fas fa-user-circle text-xl"></i>
+            <span>管理者</span>
+            <i class="fas fa-chevron-up ml-auto"></i>
+        </div>
+        <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-full mb-2">
+            <li><a href="#"><i class="fas fa-user mr-2"></i>プロフィール</a></li>
+            <li><a href="#"><i class="fas fa-sign-out-alt mr-2"></i>ログアウト</a></li>
+        </ul>
+    </div>
+</div>
+
+
+
